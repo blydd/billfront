@@ -69,11 +69,21 @@
             <view class="bill-item" v-for="(item, index) in group.items" :key="index">
               <view class="left">
                 <view class="icon" :class="item.type">
-                  <uni-icons :type="item.icon" size="24" color="#fff"></uni-icons>
+                  <iconfont :name="getIconName(item.tags[0]?.name)" size="24" color="#fff"></iconfont>
                 </view>
                 <view class="info">
-                  <text class="title">{{item.title}}</text>
                   <text class="time">{{item.time}}</text>
+                  <view class="tags-desc">
+                    <view class="tags">
+                      <text v-for="(tag, tagIndex) in item.tags" 
+                            :key="tagIndex" 
+                            class="tag"
+                            :style="{ backgroundColor: getTagColor(tagIndex) }">
+                        {{tag.name}}
+                      </text>
+                    </view>
+                    <text v-if="item.desc" class="desc">{{item.desc}}</text>
+                  </view>
                 </view>
               </view>
               <text class="amount" :class="{'income': item.amount > 0}">{{item.amount > 0 ? '+' : ''}}{{item.amount}}</text>
@@ -103,6 +113,7 @@
 
 <script setup>
 import { ref, computed, onMounted } from 'vue'
+import iconfont from '@/components/iconfont/iconfont.vue'
 
 // 当前选择的日期
 const currentDate = ref(formatDefaultDate())
@@ -206,9 +217,10 @@ const processBillData = () => {
     group.items.push({
       type: bill.type === '1' ? 'expense' : 'income',
       icon: bill.tags[0]?.icon || 'shop',
-      title: bill.tags[0]?.name || '未分类',
       time: timeStr,
-      amount: bill.type === '1' ? -parseFloat(bill.amount) : parseFloat(bill.amount)
+      amount: bill.type === '1' ? -parseFloat(bill.amount) : parseFloat(bill.amount),
+      tags: bill.tags || [],
+      desc: bill.desc || ''
     })
   })
 
@@ -292,6 +304,40 @@ const handlePaymentMethodChange = (e) => {
 const handleAccountTypeChange = (e) => {
   selectedAccountType.value = accountTypes[e.detail.value]
   queryBills() // 选择账户类型后重新查询
+}
+
+// 获取标签颜色
+const getTagColor = (index) => {
+  const colors = [
+    '#4CAF50', // 绿色
+    '#2196F3', // 蓝色
+    '#FFC107', // 黄色
+    '#9C27B0', // 紫色
+    '#FF5722', // 橙色
+    '#00BCD4', // 青色
+    '#795548', // 棕色
+    '#607D8B'  // 灰色
+  ]
+  return colors[index % colors.length]
+}
+
+// 获取图标名称
+const getIconName = (tagName) => {
+  const iconMap = {
+    '餐饮': 'food',
+    '购物': 'shopping',
+    '交通': 'transport',
+    '娱乐': 'entertainment',
+    '医疗': 'medical',
+    '教育': 'education',
+    '住房': 'housing',
+    '其他': 'other',
+    '工资': 'salary',
+    '奖金': 'bonus',
+    '投资': 'investment',
+    '礼物': 'gift'
+  }
+  return iconMap[tagName] || 'other'
 }
 
 // 页面加载时查询数据
@@ -455,6 +501,7 @@ const navigateTo = (url) => {
       .left {
         display: flex;
         align-items: center;
+        flex: 1;
         
         .icon {
           width: 80rpx;
@@ -465,6 +512,7 @@ const navigateTo = (url) => {
           align-items: center;
           justify-content: center;
           margin-right: 20rpx;
+          flex-shrink: 0;
           
           &.income {
             background-color: #FF9800;
@@ -472,15 +520,42 @@ const navigateTo = (url) => {
         }
         
         .info {
-          .title {
-            font-size: 28rpx;
-            color: #333;
-            margin-bottom: 6rpx;
-          }
+          flex: 1;
           
           .time {
-            font-size: 24rpx;
-            color: #999;
+            font-size: 28rpx;
+            color: #333;
+            margin-bottom: 8rpx;
+            display: block;
+          }
+          
+          .tags-desc {
+            display: flex;
+            align-items: center;
+            gap: 12rpx;
+            
+            .tags {
+              display: flex;
+              flex-wrap: wrap;
+              gap: 8rpx;
+              
+              .tag {
+                font-size: 24rpx;
+                color: #fff;
+                padding: 4rpx 12rpx;
+                border-radius: 20rpx;
+                background-color: #4CAF50;
+              }
+            }
+            
+            .desc {
+              font-size: 24rpx;
+              color: #666;
+              flex: 1;
+              white-space: nowrap;
+              overflow: hidden;
+              text-overflow: ellipsis;
+            }
           }
         }
       }
@@ -488,6 +563,8 @@ const navigateTo = (url) => {
       .amount {
         font-size: 32rpx;
         color: #333;
+        margin-left: 20rpx;
+        flex-shrink: 0;
         
         &.income {
           color: #FF9800;

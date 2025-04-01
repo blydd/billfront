@@ -3,30 +3,24 @@
 		{
 			"path": "pages/index/index",
 			"style": {
-				"navigationBarTitleText": "账单",
-				"navigationBarBackgroundColor": "#4CAF50",
-				"navigationBarTextStyle": "white"
+				"navigationBarTitleText": "账单明细"
 			}
 		},
 		{
 			"path": "pages/statistics/index",
 			"style": {
-				"navigationBarTitleText": "统计",
-				"navigationBarBackgroundColor": "#4CAF50",
-				"navigationBarTextStyle": "white"
+				"navigationBarTitleText": "统计分析"
 			}
 		},
 		{
 			"path": "pages/settings/index",
 			"style": {
-				"navigationBarTitleText": "分类管理",
-				"navigationBarBackgroundColor": "#4CAF50",
-				"navigationBarTextStyle": "white"
+				"navigationBarTitleText": "设置"
 			}
 		}
 	],
 	"tabBar": {
-		"color": "#666666",
+		"color": "#999999",
 		"selectedColor": "#4CAF50",
 		"backgroundColor": "#ffffff",
 		"borderStyle": "black",
@@ -34,33 +28,34 @@
 			{
 				"pagePath": "pages/index/index",
 				"text": "明细",
-				"iconPath": "static/icons/list.png",
-				"selectedIconPath": "static/icons/list-active.png"
+				"iconPath": "static/tabbar/list.png",
+				"selectedIconPath": "static/tabbar/list-active.png"
 			},
 			{
 				"pagePath": "pages/statistics/index",
 				"text": "统计",
-				"iconPath": "static/icons/chart.png",
-				"selectedIconPath": "static/icons/chart-active.png"
+				"iconPath": "static/tabbar/chart.png",
+				"selectedIconPath": "static/tabbar/chart-active.png"
 			},
 			{
 				"pagePath": "pages/settings/index",
 				"text": "设置",
-				"iconPath": "static/icons/gear.png",
-				"selectedIconPath": "static/icons/gear-active.png"
+				"iconPath": "static/tabbar/settings.png",
+				"selectedIconPath": "static/tabbar/settings-active.png"
 			}
 		]
 	},
 	"globalStyle": {
 		"navigationBarTextStyle": "black",
-		"navigationBarTitleText": "账单",
+		"navigationBarTitleText": "账单管理",
 		"navigationBarBackgroundColor": "#F8F8F8",
 		"backgroundColor": "#F8F8F8"
 	},
 	"easycom": {
 		"autoscan": true,
 		"custom": {
-			"^uni-(.*)": "@dcloudio/uni-ui/lib/uni-$1/uni-$1"
+			"^uni-(.*)": "@dcloudio/uni-ui/lib/uni-$1/uni-$1.vue",
+			"^qiun-(.*)": "@/uni_modules/qiun-data-charts/components/qiun-$1/qiun-$1.vue"
 		}
 	}
 }

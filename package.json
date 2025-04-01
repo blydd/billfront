@@ -52,6 +52,8 @@
     "@dcloudio/uni-mp-xhs": "3.0.0-4040520250104002",
     "@dcloudio/uni-quickapp-webview": "3.0.0-4040520250104002",
     "@dcloudio/uni-ui": "^1.4.28",
+    "echarts": "^5.6.0",
+    "ucharts": "^0.0.0",
     "vue": "^3.4.21",
     "vue-i18n": "^9.1.9"
   },

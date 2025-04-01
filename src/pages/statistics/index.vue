@@ -61,12 +61,30 @@
 
     <!-- 支出构成饼图 -->
     <view class="chart-section">
-      <text class="section-title">支出构成</text>
+      <text class="section-title">{{activeTab === 'expense' ? '支出' : '收入'}}构成</text>
       <view class="chart-container">
         <qiun-data-charts 
           type="ring"
-          :chartData="chartData"
-          :opts="chartOpts"
+          :chartData="pieChartData"
+          :opts="pieChartOpts"
+          :ontouch="true"
+          :canvas2d="true"
+          canvasId="pieChart"
+        />
+      </view>
+    </view>
+
+    <!-- 柱状图 -->
+    <view class="chart-section">
+      <text class="section-title">{{activeTab === 'expense' ? '支出' : '收入'}}趋势</text>
+      <view class="chart-container">
+        <qiun-data-charts 
+          type="column"
+          :chartData="barChartData"
+          :opts="barChartOpts"
+          :ontouch="true"
+          :canvas2d="true"
+          canvasId="barChart"
         />
       </view>
     </view>
@@ -76,7 +94,7 @@
       <view class="category-item" v-for="(item, index) in categories" :key="index">
         <view class="category-info">
           <view class="icon-wrapper" :style="{ backgroundColor: item.color }">
-            <uni-icons :type="item.icon" size="24" color="#fff"></uni-icons>
+            <iconfont :name="item.icon" size="24" color="#fff"></iconfont>
           </view>
           <view class="category-detail">
             <text class="name">{{item.name}}</text>
@@ -107,6 +125,9 @@
 
 <script setup>
 import { ref, computed, onMounted } from 'vue'
+import iconfont from '@/components/iconfont/iconfont.vue'
+import { onLoad } from '@dcloudio/uni-app'
+import uCharts from 'ucharts'
 
 // 当前选择的日期
 const currentDate = ref(formatDefaultDate())
@@ -133,6 +154,71 @@ const selectedAccountType = ref('')
 // 账单数据
 const billList = ref([])
 
+// 图表配置
+const pieChartOpts = ref({
+  padding: [15, 15, 15, 15],
+  legend: {
+    show: true,
+    position: 'right',
+    lineHeight: 25,
+    fontSize: 12,
+    formatter: (name, value, percent) => {
+      return `${name} ${percent}%`
+    }
+  },
+  series: {
+    radius: ['40%', '70%'],
+    avoidLabelOverlap: true,
+    label: {
+      show: true,
+      position: 'center',
+      formatter: '{b}\n{d}%\n{format}'
+    }
+  }
+})
+
+const barChartOpts = ref({
+  padding: [15, 15, 15, 15],
+  legend: {
+    show: false
+  },
+  xAxis: {
+    axisLabel: {
+      interval: 0,
+      rotate: 45
+    }
+  },
+  yAxis: {
+    data: [{
+      title: '金额',
+      min: 0
+    }]
+  }
+})
+
+// 图表数据
+const pieChartData = ref({
+  series: [{
+    data: []
+  }]
+})
+
+const barChartData = ref({
+  categories: [],
+  series: [{
+    name: '金额',
+    data: []
+  }]
+})
+
+// 初始化图表
+onLoad(() => {
+  // 初始化饼图
+  pieChart = new uCharts.init(document.getElementById('pieChart'))
+  // 初始化柱状图
+  barChart = new uCharts.init(document.getElementById('barChart'))
+})
+
 // 获取默认日期（当前月份）
 function formatDefaultDate() {
   const now = new Date()
@@ -152,25 +238,37 @@ const queryBills = async () => {
             selectedBillType.value === '不计入收支' ? '3' : undefined
     }
 
-    const response = await uni.request({
-      url: 'http://localhost:8080/api/bills/query',
-      method: 'POST',
-      data: params
+    const response = await new Promise((resolve, reject) => {
+      uni.request({
+        url: '/api/bills/query',
+        method: 'POST',
+        data: params,
+        header: {
+          'content-type': 'application/json'
+        },
+        success: (res) => {
+          resolve(res)
+        },
+        fail: (err) => {
+          reject(err)
+        }
+      })
     })
 
-    if (response.data.code === 200) {
+    if (response.statusCode === 200 && response.data.code === 200) {
       billList.value = response.data.data
       calculateTotals()
       updateChartData()
     } else {
       uni.showToast({
-        title: response.data.message || '查询失败',
+        title: response.data?.message || '查询失败',
         icon: 'none'
       })
     }
   } catch (error) {
+    console.error('查询账单失败:', error)
     uni.showToast({
-      title: '网络错误',
+      title: '网络错误，请检查网络连接',
       icon: 'none'
     })
   }
@@ -200,20 +298,23 @@ const calculateCategoryStats = () => {
     parseFloat(totalExpense.value) : 
     parseFloat(totalIncome.value)
 
+  // 按标签统计金额
   billList.value
     .filter(bill => 
       (activeTab.value === 'expense' && bill.type === '1') || 
       (activeTab.value === 'income' && bill.type === '2')
     )
     .forEach(bill => {
+      // 每个账单可能有多个标签，金额平均分配给每个标签
+      const amountPerTag = parseFloat(bill.amount) / bill.tags.length
       bill.tags.forEach(tag => {
         const existing = categoryMap.get(tag.name) || { 
           amount: 0, 
           name: tag.name,
-          icon: tag.icon,
-          color: getRandomColor() // 这里可以根据实际需求设置固定的颜色映射
+          icon: getIconName(tag.name),
+          color: getTagColor(categoryMap.size)
         }
-        existing.amount += parseFloat(bill.amount)
+        existing.amount += amountPerTag
         categoryMap.set(tag.name, existing)
       })
     })
@@ -227,10 +328,38 @@ const calculateCategoryStats = () => {
   return categories
 }
 
-// 生成随机颜色（实际项目中建议使用固定的颜色映射）
-const getRandomColor = () => {
-  const colors = ['#4CAF50', '#2196F3', '#FFC107', '#9C27B0', '#FF5722']
-  return colors[Math.floor(Math.random() * colors.length)]
+// 获取标签颜色
+const getTagColor = (index) => {
+  const colors = [
+    '#4CAF50', // 绿色
+    '#2196F3', // 蓝色
+    '#FFC107', // 黄色
+    '#9C27B0', // 紫色
+    '#FF5722', // 橙色
+    '#00BCD4', // 青色
+    '#795548', // 棕色
+    '#607D8B'  // 灰色
+  ]
+  return colors[index % colors.length]
+}
+
+// 获取图标名称
+const getIconName = (tagName) => {
+  const iconMap = {
+    '餐饮': 'food',
+    '购物': 'shopping',
+    '交通': 'transport',
+    '娱乐': 'entertainment',
+    '医疗': 'medical',
+    '教育': 'education',
+    '住房': 'housing',
+    '其他': 'other',
+    '工资': 'salary',
+    '奖金': 'bonus',
+    '投资': 'investment',
+    '礼物': 'gift'
+  }
+  return iconMap[tagName] || 'other'
 }
 
 // 切换支出/入账标签
@@ -248,8 +377,17 @@ const updateChartData = () => {
     incomeCategories.value = categoryStats
   }
 
-  chartData.series[0].data = categoryStats.map(item => ({
+  // 更新饼图数据
+  pieChartData.value.series[0].data = categoryStats.map(item => ({
     name: item.name,
+    value: parseFloat(item.amount),
+    color: item.color,
+    format: '¥{value}'
+  }))
+
+  // 更新柱状图数据
+  barChartData.value.categories = categoryStats.map(item => item.name)
+  barChartData.value.series[0].data = categoryStats.map(item => ({
     value: parseFloat(item.amount),
     color: item.color
   }))
@@ -265,31 +403,6 @@ const incomeCategories = ref([])
 const categories = computed(() => 
   activeTab.value === 'expense' ? expenseCategories.value : incomeCategories.value
 )
-
-// 图表配置
-const chartData = {
-  series: [{
-    data: expenseCategories.value.map(item => ({
-      name: item.name,
-      value: parseFloat(item.amount),
-      color: item.color
-    }))
-  }]
-}
-
-const chartOpts = {
-  padding: [15, 15, 15, 15],
-  legend: {
-    show: false
-  },
-  series: {
-    radius: ['40%', '70%'],
-    avoidLabelOverlap: true,
-    label: {
-      show: false
-    }
-  }
-}
 
 // 格式化日期显示
 const formatDate = (date) => {
@@ -487,6 +600,7 @@ const navigateTo = (url) => {
 
   .chart-container {
     height: 600rpx;
+    width: 100%;
     display: flex;
     justify-content: center;
     align-items: center;
