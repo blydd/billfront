@@ -5,13 +5,13 @@
       <view class="month-picker">
         <view class="month-switcher">
           <view class="arrow" @click="switchMonth(-1)">
-            <uni-icons type="left" size="18" color="#fff"></uni-icons>
+            <uni-icons type="left" size="20" color="#fff"></uni-icons>
           </view>
           <picker mode="date" fields="month" :value="currentDate" @change="handleDateChange">
-            <view class="picker-text">{{formatDate(currentDate)}} ></view>
+            <view class="picker-text">{{formatDate(currentDate)}}</view>
           </picker>
           <view class="arrow" @click="switchMonth(1)">
-            <uni-icons type="right" size="18" color="#fff"></uni-icons>
+            <uni-icons type="right" size="20" color="#fff"></uni-icons>
           </view>
         </view>
       </view>
@@ -123,9 +123,10 @@
             :key="tag.id"
             @click="toggleTagSelection(tag)"
             :class="{ 'selected': isTagSelected(tag) }"
+            :data-type="getTagType(tag.name)"
           >
             <text class="tag-name">{{tag.name}}</text>
-            <uni-icons v-if="isTagSelected(tag)" type="checkmarkempty" size="18" color="#4CAF50"></uni-icons>
+            <uni-icons v-if="isTagSelected(tag)" type="checkmarkempty" size="18" color="#fff"></uni-icons>
           </view>
         </view>
       </view>
@@ -388,9 +389,9 @@ const accountTypes = ['全部', '信用账户', '储蓄账户']
 const selectedAccountType = ref('')
 
 // 格式化日期显示
-const formatDate = (date) => {
-  const [year, month] = date.split('-')
-  return `${year}年${parseInt(month)}月`
+const formatDate = (dateStr) => {
+  const [year, month] = dateStr.split('-')
+  return `${year}年${month}月`
 }
 
 // 切换月份
@@ -401,7 +402,7 @@ const switchMonth = (offset) => {
   const month = (date.getMonth() + 1).toString().padStart(2, '0')
   currentDate.value = `${year}-${month}`
   
-  // 月份切换后重新查询账单，但不需要重新获取标签列表
+  // 月份切换后重新查询账单
   queryBills()
 }
 
@@ -459,6 +460,20 @@ const getIconName = (tagName) => {
   return iconMap[tagName] || 'other'
 }
 
+// 获取标签类型
+const getTagType = (tagName) => {
+  const expenseTags = ['餐饮', '购物', '交通', '娱乐', '医疗', '教育', '住房']
+  const incomeTags = ['工资', '奖金', '投资', '礼物']
+  
+  if (expenseTags.includes(tagName)) {
+    return 'expense'
+  } else if (incomeTags.includes(tagName)) {
+    return 'income'
+  } else {
+    return 'other'
+  }
+}
+
 // 页面加载时查询数据
 onMounted(() => {
   // 先获取标签列表，确保标签列表已加载
@@ -499,24 +514,28 @@ const navigateTo = (url) => {
       justify-content: center;
       
       .arrow {
-        width: 60rpx;
-        height: 60rpx;
+        width: 64rpx;
+        height: 64rpx;
         display: flex;
         align-items: center;
         justify-content: center;
-        background-color: rgba(255, 255, 255, 0.1);
+        background-color: rgba(255, 255, 255, 0.15);
         border-radius: 50%;
-        margin: 0 20rpx;
+        margin: 0 30rpx;
+        transition: all 0.3s ease;
         
         &:active {
-          background-color: rgba(255, 255, 255, 0.2);
+          background-color: rgba(255, 255, 255, 0.25);
+          transform: scale(0.95);
         }
       }
       
       .picker-text {
-        font-size: 32rpx;
-        min-width: 180rpx;
+        font-size: 36rpx;
+        min-width: 200rpx;
         text-align: center;
+        font-weight: 500;
+        letter-spacing: 1rpx;
       }
     }
   }
@@ -733,58 +752,195 @@ const navigateTo = (url) => {
   z-index: 999;
   display: flex;
   align-items: flex-end;
+  animation: slideUp 0.3s ease-out;
 }
 
 .tag-selector {
   background-color: #fff;
-  border-radius: 20rpx 20rpx 0 0;
+  border-radius: 24rpx 24rpx 0 0;
   padding: 30rpx;
   width: 100%;
+  max-height: 80vh;
+  overflow-y: auto;
   
   .selector-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
     margin-bottom: 30rpx;
+    padding-bottom: 20rpx;
+    border-bottom: 1px solid #f5f5f5;
     
     .title {
       font-size: 32rpx;
-      font-weight: bold;
+      font-weight: 600;
       color: #333;
     }
     
     .confirm {
       font-size: 28rpx;
       color: #4CAF50;
-      padding: 10rpx 20rpx;
+      padding: 12rpx 24rpx;
+      background-color: rgba(76, 175, 80, 0.1);
+      border-radius: 8rpx;
+      transition: all 0.3s ease;
+      
+      &:active {
+        background-color: rgba(76, 175, 80, 0.2);
+      }
     }
   }
   
   .tag-list {
     display: flex;
     flex-wrap: wrap;
+    justify-content: center;
+    gap: 24rpx;
+    padding: 0 20rpx;
     
     .tag-item {
-      width: 30%;
-      margin: 0 1.66% 20rpx;
-      height: 80rpx;
-      border-radius: 8rpx;
-      background-color: #f5f5f5;
+      width: calc((100% - 48rpx) / 3);
+      height: 88rpx;
+      border-radius: 12rpx;
+      background-color: #f8f8f8;
       display: flex;
       align-items: center;
-      justify-content: space-between;
-      padding: 0 20rpx;
+      justify-content: center;
+      position: relative;
+      transition: all 0.3s ease;
+      overflow: hidden;
+      
+      &:active {
+        transform: scale(0.98);
+      }
       
       &.selected {
         background-color: rgba(76, 175, 80, 0.1);
-        border: 1px solid #4CAF50;
+        border: 2rpx solid #4CAF50;
+        
+        .tag-name {
+          color: #4CAF50;
+          font-weight: 500;
+        }
+        
+        &::after {
+          content: '';
+          position: absolute;
+          right: 16rpx;
+          width: 32rpx;
+          height: 32rpx;
+          background-color: #4CAF50;
+          border-radius: 50%;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+        }
+        
+        uni-icons {
+          opacity: 1;
+          color: #fff;
+        }
       }
       
       .tag-name {
         font-size: 28rpx;
         color: #333;
+        transition: all 0.3s ease;
+        position: relative;
+        z-index: 1;
+        text-align: center;
+        padding: 0 40rpx;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+      
+      uni-icons {
+        opacity: 0;
+        transition: all 0.3s ease;
+        position: absolute;
+        right: 16rpx;
+        z-index: 2;
+      }
+      
+      // 支出类标签样式
+      &[data-type="expense"] {
+        background-color: rgba(244, 67, 54, 0.1);
+        border: 1px solid rgba(244, 67, 54, 0.2);
+        
+        .tag-name {
+          color: #f44336;
+        }
+        
+        &.selected {
+          background-color: rgba(244, 67, 54, 0.15);
+          border-color: #f44336;
+          
+          .tag-name {
+            color: #f44336;
+          }
+          
+          &::after {
+            background-color: #f44336;
+          }
+        }
+      }
+      
+      // 收入类标签样式
+      &[data-type="income"] {
+        background-color: rgba(76, 175, 80, 0.1);
+        border: 1px solid rgba(76, 175, 80, 0.2);
+        
+        .tag-name {
+          color: #4CAF50;
+        }
+        
+        &.selected {
+          background-color: rgba(76, 175, 80, 0.15);
+          border-color: #4CAF50;
+          
+          .tag-name {
+            color: #4CAF50;
+          }
+          
+          &::after {
+            background-color: #4CAF50;
+          }
+        }
+      }
+      
+      // 其他类标签样式
+      &[data-type="other"] {
+        background-color: rgba(33, 150, 243, 0.1);
+        border: 1px solid rgba(33, 150, 243, 0.2);
+        
+        .tag-name {
+          color: #2196F3;
+        }
+        
+        &.selected {
+          background-color: rgba(33, 150, 243, 0.15);
+          border-color: #2196F3;
+          
+          .tag-name {
+            color: #2196F3;
+          }
+          
+          &::after {
+            background-color: #2196F3;
+          }
+        }
       }
     }
+  }
+}
+
+@keyframes slideUp {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: translateY(0);
   }
 }
 </style>
