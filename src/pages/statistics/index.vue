@@ -15,33 +15,8 @@
           </view>
         </view>
       </view>
-      <view class="filter-section">
-        <view class="filter-item">
-          <picker :range="billTypes" @change="handleBillTypeChange">
-            <view class="picker-content">
-              <text :class="['placeholder', selectedBillType ? 'selected' : '']">{{selectedBillType || '账单类型'}}</text>
-              <uni-icons type="bottom" size="14" color="#fff"></uni-icons>
-            </view>
-          </picker>
-        </view>
-        <view class="filter-item">
-          <picker :range="paymentMethods" @change="handlePaymentMethodChange">
-            <view class="picker-content">
-              <text :class="['placeholder', selectedPaymentMethod ? 'selected' : '']">{{selectedPaymentMethod || '支付方式'}}</text>
-              <uni-icons type="bottom" size="14" color="#fff"></uni-icons>
-            </view>
-          </picker>
-        </view>
-        <view class="filter-item">
-          <picker :range="accountTypes" @change="handleAccountTypeChange">
-            <view class="picker-content">
-              <text :class="['placeholder', selectedAccountType ? 'selected' : '']">{{selectedAccountType || '账户类型'}}</text>
-              <uni-icons type="bottom" size="14" color="#fff"></uni-icons>
-            </view>
-          </picker>
-        </view>
-      </view>
-      <view class="bottom-section">
+      
+      <view class="header-controls">
         <view class="tab-switch">
           <text 
             :class="['tab-item', activeTab === 'expense' ? 'active' : '']" 
@@ -52,56 +27,61 @@
             @click="switchTab('income')"
           >入账</text>
         </view>
-        <view class="total-amount">
-          <text class="label">共{{activeTab === 'expense' ? '支出' : '入账'}}</text>
-          <text class="amount">¥ {{activeTab === 'expense' ? totalExpense : totalIncome}}</text>
+        
+        <view class="filters">
+          <!-- 新增标签类别筛选 -->
+          <view class="filter-item">
+            <picker :range="tagTypes" @change="handleTagTypeChange">
+              <view class="picker-content">
+                <text :class="['placeholder', selectedTagType ? 'selected' : '']">{{selectedTagType || '标签类别'}}</text>
+                <uni-icons type="bottom" size="14" color="#fff"></uni-icons>
+              </view>
+            </picker>
+          </view>
+          
+          <!-- 账户类型筛选 -->
+          <view class="filter-item">
+            <picker :range="accountTypes" @change="handleAccountTypeChange">
+              <view class="picker-content">
+                <text :class="['placeholder', selectedAccountType ? 'selected' : '']">{{selectedAccountType || '账户类型'}}</text>
+                <uni-icons type="bottom" size="14" color="#fff"></uni-icons>
+              </view>
+            </picker>
+          </view>
         </view>
+      </view>
+      
+      <view class="total-amount">
+        <text class="label">共{{activeTab === 'expense' ? '支出' : '入账'}}</text>
+        <text class="amount">¥ {{activeTab === 'expense' ? totalExpense : totalIncome}}</text>
       </view>
     </view>
 
-    <!-- 支出构成饼图 -->
+    <!-- 支出/收入构成 -->
     <view class="chart-section">
       <text class="section-title">{{activeTab === 'expense' ? '支出' : '收入'}}构成</text>
       <view class="chart-container">
-        <qiun-data-charts 
-          type="ring"
-          :chartData="pieChartData"
-          :opts="pieChartOpts"
-          :ontouch="true"
-          :canvas2d="true"
-          canvasId="pieChart"
-        />
-      </view>
-    </view>
-
-    <!-- 柱状图 -->
-    <view class="chart-section">
-      <text class="section-title">{{activeTab === 'expense' ? '支出' : '收入'}}趋势</text>
-      <view class="chart-container">
-        <qiun-data-charts 
-          type="column"
-          :chartData="barChartData"
-          :opts="barChartOpts"
-          :ontouch="true"
-          :canvas2d="true"
-          canvasId="barChart"
-        />
-      </view>
-    </view>
-
-    <!-- 分类列表 -->
-    <view class="category-list">
-      <view class="category-item" v-for="(item, index) in categories" :key="index">
-        <view class="category-info">
-          <view class="icon-wrapper" :style="{ backgroundColor: item.color }">
-            <iconfont :name="item.icon" size="24" color="#fff"></iconfont>
+        <!-- 使用列表和进度条代替饼图 -->
+        <view class="category-list-chart">
+          <view class="no-data" v-if="categories.length === 0">
+            <text>暂无数据</text>
           </view>
-          <view class="category-detail">
-            <text class="name">{{item.name}}</text>
-            <text class="percent">{{item.percent}}%</text>
+          <view class="category-item-chart" v-for="(item, index) in categories" :key="index">
+            <view class="category-info">
+              <view class="icon-wrapper" :style="{ backgroundColor: item.color }">
+                <iconfont :name="item.icon" size="24" color="#fff"></iconfont>
+              </view>
+              <view class="category-detail">
+                <text class="name">{{item.name}}</text>
+                <text class="percent">{{item.percent}}%</text>
+              </view>
+            </view>
+            <view class="progress-bar">
+              <view class="progress" :style="{ width: item.percent + '%', backgroundColor: item.color }"></view>
+            </view>
+            <text class="amount">¥{{item.amount}}</text>
           </view>
         </view>
-        <text class="amount">¥{{item.amount}}</text>
       </view>
     </view>
 
@@ -124,10 +104,9 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import iconfont from '@/components/iconfont/iconfont.vue'
 import { onLoad } from '@dcloudio/uni-app'
-import uCharts from 'ucharts'
 
 // 当前选择的日期
 const currentDate = ref(formatDefaultDate())
@@ -139,85 +118,32 @@ const activeTab = ref('expense')
 const totalExpense = ref('0.00')
 const totalIncome = ref('0.00')
 
-// 账单类型选项
-const billTypes = ['全部', '支出', '收入', '不计入收支']
-const selectedBillType = ref('')
-
-// 支付方式选项
-const paymentMethods = ['全部', '支付宝', '微信', '现金', '银行卡']
-const selectedPaymentMethod = ref('')
-
-// 账户类型选项
-const accountTypes = ['全部', '信用账户', '储蓄账户']
-const selectedAccountType = ref('')
-
 // 账单数据
 const billList = ref([])
 
-// 图表配置
-const pieChartOpts = ref({
-  padding: [15, 15, 15, 15],
-  legend: {
-    show: true,
-    position: 'right',
-    lineHeight: 25,
-    fontSize: 12,
-    formatter: (name, value, percent) => {
-      return `${name} ${percent}%`
-    }
-  },
-  series: {
-    radius: ['40%', '70%'],
-    avoidLabelOverlap: true,
-    label: {
-      show: true,
-      position: 'center',
-      formatter: '{b}\n{d}%\n{format}'
-    }
-  }
-})
+// 标签类别选项
+const tagTypes = ref(['账单类型', '支付方式'])
+const selectedTagType = ref('账单类型')
 
-const barChartOpts = ref({
-  padding: [15, 15, 15, 15],
-  legend: {
-    show: false
-  },
-  xAxis: {
-    axisLabel: {
-      interval: 0,
-      rotate: 45
-    }
-  },
-  yAxis: {
-    data: [{
-      title: '金额',
-      min: 0
-    }]
-  }
-})
+// 账户类型选项
+const accountTypes = ref(['全部', '储蓄账户', '信用账户'])
+const selectedAccountType = ref('')
 
-// 图表数据
-const pieChartData = ref({
-  series: [{
-    data: []
-  }]
-})
+// 分类数据
+const expenseCategories = ref([])
+const incomeCategories = ref([])
 
-const barChartData = ref({
-  categories: [],
-  series: [{
-    name: '金额',
-    data: []
-  }]
-})
+// 处理标签类别选择
+const handleTagTypeChange = (e) => {
+  selectedTagType.value = tagTypes.value[e.detail.value]
+  queryBills() // 选择标签类别后重新查询
+}
 
-// 初始化图表
-onLoad(() => {
-  // 初始化饼图
-  pieChart = new uCharts.init(document.getElementById('pieChart'))
-  // 初始化柱状图
-  barChart = new uCharts.init(document.getElementById('barChart'))
-})
+// 处理账户类型选择
+const handleAccountTypeChange = (e) => {
+  selectedAccountType.value = accountTypes.value[e.detail.value]
+  queryBills() // 选择账户类型后重新查询
+}
 
 // 获取默认日期（当前月份）
 function formatDefaultDate() {
@@ -233,9 +159,9 @@ const queryBills = async () => {
     const params = {
       userId: 1, // 这里暂时写死，实际应该从用户登录信息中获取
       month: currentDate.value,
-      type: selectedBillType.value === '支出' ? '1' : 
-            selectedBillType.value === '收入' ? '2' : 
-            selectedBillType.value === '不计入收支' ? '3' : undefined
+      accountType: selectedAccountType.value === '储蓄账户' ? 1 :
+                  selectedAccountType.value === '信用账户' ? 2 : undefined,
+      tagType: selectedTagType.value === '账单类型' ? 2 : 1 // 根据选择传递对应的值
     }
 
     const response = await new Promise((resolve, reject) => {
@@ -258,7 +184,7 @@ const queryBills = async () => {
     if (response.statusCode === 200 && response.data.code === 200) {
       billList.value = response.data.data
       calculateTotals()
-      updateChartData()
+      updateCategoryData()
     } else {
       uni.showToast({
         title: response.data?.message || '查询失败',
@@ -278,73 +204,86 @@ const queryBills = async () => {
 const calculateTotals = () => {
   let expense = 0
   let income = 0
-
+  
   billList.value.forEach(bill => {
-    if (bill.type === '1') { // 支出
-      expense += parseFloat(bill.amount)
-    } else if (bill.type === '2') { // 收入
-      income += parseFloat(bill.amount)
+    if (bill.inoutType === 1) { // 支出
+      expense += bill.amount
+    } else if (bill.inoutType === 2) { // 收入
+      income += bill.amount
     }
   })
-
+  
   totalExpense.value = expense.toFixed(2)
   totalIncome.value = income.toFixed(2)
 }
 
-// 处理账单分类统计
+// 切换标签（支出/入账）
+const switchTab = (tab) => {
+  activeTab.value = tab
+  updateCategoryData() // 更新分类数据
+}
+
+// 更新分类数据
+const updateCategoryData = () => {
+  const categoryStats = calculateCategoryStats()
+  if (activeTab.value === 'expense') {
+    expenseCategories.value = categoryStats
+  } else {
+    incomeCategories.value = categoryStats
+  }
+}
+
+// 计算分类统计数据
 const calculateCategoryStats = () => {
   const categoryMap = new Map()
-  const total = activeTab.value === 'expense' ? 
-    parseFloat(totalExpense.value) : 
-    parseFloat(totalIncome.value)
-
-  // 按标签统计金额
-  billList.value
-    .filter(bill => 
-      (activeTab.value === 'expense' && bill.type === '1') || 
-      (activeTab.value === 'income' && bill.type === '2')
-    )
-    .forEach(bill => {
-      // 每个账单可能有多个标签，金额平均分配给每个标签
-      const amountPerTag = parseFloat(bill.amount) / bill.tags.length
-      bill.tags.forEach(tag => {
-        const existing = categoryMap.get(tag.name) || { 
-          amount: 0, 
-          name: tag.name,
-          icon: getIconName(tag.name),
-          color: getTagColor(categoryMap.size)
-        }
-        existing.amount += amountPerTag
-        categoryMap.set(tag.name, existing)
-      })
-    })
-
-  const categories = Array.from(categoryMap.values())
-  categories.forEach(category => {
-    category.amount = category.amount.toFixed(2)
-    category.percent = ((category.amount / total) * 100).toFixed(2)
+  let total = 0
+  
+  // 根据当前标签筛选账单
+  const filteredBills = billList.value.filter(bill => 
+    (activeTab.value === 'expense' && bill.inoutType === 1) || 
+    (activeTab.value === 'income' && bill.inoutType === 2)
+  )
+  
+  // 计算总金额
+  filteredBills.forEach(bill => {
+    total += Math.abs(bill.amount)
   })
-
-  return categories
+  
+  // 按标签分组统计
+  filteredBills.forEach(bill => {
+    for (const tag of bill.tags) {
+      if (!categoryMap.has(tag.name)) {
+        categoryMap.set(tag.name, {
+          name: tag.name,
+          amount: 0,
+          icon: getIconName(tag.name),
+          color: getTagColor(categoryMap.size) // 使用索引生成不同的颜色
+        })
+      }
+      
+      const category = categoryMap.get(tag.name)
+      category.amount += Math.abs(bill.amount)
+    }
+  })
+  
+  // 转换为数组并计算百分比
+  const result = Array.from(categoryMap.values()).map(category => {
+    const amount = category.amount.toFixed(2)
+    const percent = total > 0 ? Math.round((category.amount / total) * 100) : 0
+    return {
+      ...category,
+      amount,
+      percent
+    }
+  })
+  
+  // 按金额降序排序
+  return result.sort((a, b) => parseFloat(b.amount) - parseFloat(a.amount))
 }
 
-// 获取标签颜色
-const getTagColor = (index) => {
-  const colors = [
-    '#4CAF50', // 绿色
-    '#2196F3', // 蓝色
-    '#FFC107', // 黄色
-    '#9C27B0', // 紫色
-    '#FF5722', // 橙色
-    '#00BCD4', // 青色
-    '#795548', // 棕色
-    '#607D8B'  // 灰色
-  ]
-  return colors[index % colors.length]
-}
-
-// 获取图标名称
+// 获取标签对应的图标
 const getIconName = (tagName) => {
+  // 这里可以根据标签名返回对应的图标名称
   const iconMap = {
     '餐饮': 'food',
     '购物': 'shopping',
@@ -352,52 +291,20 @@ const getIconName = (tagName) => {
     '娱乐': 'entertainment',
     '医疗': 'medical',
     '教育': 'education',
-    '住房': 'housing',
-    '其他': 'other',
+    '旅行': 'travel',
+    '住房': 'house',
     '工资': 'salary',
-    '奖金': 'bonus',
-    '投资': 'investment',
-    '礼物': 'gift'
+    '奖金': 'bonus'
   }
+  
   return iconMap[tagName] || 'other'
 }
 
-// 切换支出/入账标签
-const switchTab = (tab) => {
-  activeTab.value = tab
-  updateChartData()
+// 获取标签颜色
+const getTagColor = (index) => {
+  const colors = ['#91CC75', '#FAC858', '#EE6666', '#73C0DE', '#3CA272', '#FC8452', '#9A60B4', '#ea7ccc']
+  return colors[index % colors.length]
 }
-
-// 更新图表数据
-const updateChartData = () => {
-  const categoryStats = calculateCategoryStats()
-  if (activeTab.value === 'expense') {
-    expenseCategories.value = categoryStats
-  } else {
-    incomeCategories.value = categoryStats
-  }
-
-  // 更新饼图数据
-  pieChartData.value.series[0].data = categoryStats.map(item => ({
-    name: item.name,
-    value: parseFloat(item.amount),
-    color: item.color,
-    format: '¥{value}'
-  }))
-
-  // 更新柱状图数据
-  barChartData.value.categories = categoryStats.map(item => item.name)
-  barChartData.value.series[0].data = categoryStats.map(item => ({
-    value: parseFloat(item.amount),
-    color: item.color
-  }))
-}
-
-// 支出分类数据
-const expenseCategories = ref([])
-
-// 入账分类数据
-const incomeCategories = ref([])
 
 // 分类数据（根据当前标签显示）
 const categories = computed(() => 
@@ -405,43 +312,29 @@ const categories = computed(() =>
 )
 
 // 格式化日期显示
-const formatDate = (date) => {
-  const [year, month] = date.split('-')
-  return `${year}年${parseInt(month)}月`
+const formatDate = (dateStr) => {
+  const [year, month] = dateStr.split('-')
+  return `${year}年${month}月`
 }
 
 // 切换月份
 const switchMonth = (offset) => {
-  const [year, month] = currentDate.value.split('-')
-  const date = new Date(parseInt(year), parseInt(month) - 1 + offset)
-  const newYear = date.getFullYear()
-  const newMonth = (date.getMonth() + 1).toString().padStart(2, '0')
-  currentDate.value = `${newYear}-${newMonth}`
-  queryBills() // 切换月份后重新查询
+  const date = new Date(currentDate.value)
+  date.setMonth(date.getMonth() + offset)
+  const year = date.getFullYear()
+  const month = (date.getMonth() + 1).toString().padStart(2, '0')
+  currentDate.value = `${year}-${month}`
+  
+  // 月份切换后重新查询账单
+  queryBills()
 }
 
-// 日期选择处理
+// 处理日期选择
 const handleDateChange = (e) => {
   currentDate.value = e.detail.value
-  queryBills() // 选择日期后重新查询
-}
-
-// 处理账单类型选择
-const handleBillTypeChange = (e) => {
-  selectedBillType.value = billTypes[e.detail.value]
-  queryBills() // 选择账单类型后重新查询
-}
-
-// 处理支付方式选择
-const handlePaymentMethodChange = (e) => {
-  selectedPaymentMethod.value = paymentMethods[e.detail.value]
-  queryBills() // 选择支付方式后重新查询
-}
-
-// 处理账户类型选择
-const handleAccountTypeChange = (e) => {
-  selectedAccountType.value = accountTypes[e.detail.value]
-  queryBills() // 选择账户类型后重新查询
+  
+  // 日期变更后重新查询账单
+  queryBills()
 }
 
 // 页面加载时查询数据
@@ -468,11 +361,11 @@ const navigateTo = (url) => {
 
 .header {
   background-color: #4CAF50;
-  padding: 20rpx 30rpx;
+  padding: 20rpx 30rpx 30rpx;
   color: #fff;
   
   .month-picker {
-    margin-bottom: 20rpx;
+    margin-bottom: 30rpx;
     
     .month-switcher {
       display: flex;
@@ -501,160 +394,159 @@ const navigateTo = (url) => {
       }
     }
   }
-
-  .filter-section {
+  
+  .header-controls {
     display: flex;
-    margin-bottom: 20rpx;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 30rpx;
     
-    .filter-item {
-      flex: 1;
-      margin-right: 12rpx;
+    .tab-switch {
+      display: flex;
+      background-color: rgba(255, 255, 255, 0.1);
+      border-radius: 8rpx;
+      overflow: hidden;
       
-      &:last-child {
-        margin-right: 0;
-      }
-      
-      .picker-content {
-        background-color: rgba(255, 255, 255, 0.1);
-        padding: 12rpx 16rpx;
-        border-radius: 8rpx;
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
+      .tab-item {
+        padding: 12rpx 24rpx;
+        font-size: 28rpx;
+        color: rgba(255, 255, 255, 0.8);
         
-        .placeholder {
-          font-size: 24rpx;
-          color: rgba(255, 255, 255, 0.8);
-          white-space: nowrap;
-          overflow: hidden;
-          text-overflow: ellipsis;
-          max-width: 120rpx;
-          
-          &.selected {
-            color: #fff;
-          }
+        &.active {
+          background-color: rgba(255, 255, 255, 0.2);
+          color: #fff;
         }
+      }
+    }
+    
+    .filters {
+      display: flex;
+      
+      .filter-item {
+        margin-left: 15rpx;
+        
+        .picker-content {
+          display: flex;
+          align-items: center;
+          background-color: rgba(255, 255, 255, 0.1);
+          padding: 8rpx 16rpx;
+          border-radius: 8rpx;
+          
+          .placeholder {
+            font-size: 24rpx;
+            color: rgba(255, 255, 255, 0.8);
+            margin-right: 8rpx;
+            
+            &.selected {
+              color: #fff;
+            }
+          }
 
-        uni-icons {
-          margin-left: 8rpx;
-          flex-shrink: 0;
+          uni-icons {
+            margin-left: 8rpx;
+            flex-shrink: 0;
+          }
         }
       }
     }
   }
   
-  .bottom-section {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
+  .total-amount {
+    text-align: center;
     
-    .tab-switch {
-      display: flex;
-      
-      .tab-item {
-        padding: 10rpx 30rpx;
-        font-size: 28rpx;
-        border-radius: 30rpx;
-        margin-right: 20rpx;
-        background-color: rgba(255, 255, 255, 0.1);
-        
-        &.active {
-          background-color: #fff;
-          color: #4CAF50;
-        }
-        
-        &:last-child {
-          margin-right: 0;
-        }
-      }
+    .label {
+      font-size: 24rpx;
+      margin-right: 10rpx;
     }
     
-    .total-amount {
-      display: flex;
-      align-items: baseline;
-      
-      .label {
-        font-size: 28rpx;
-        margin-right: 10rpx;
-      }
-      
-      .amount {
-        font-size: 48rpx;
-        font-weight: bold;
-      }
+    .amount {
+      font-size: 40rpx;
+      font-weight: bold;
     }
   }
 }
 
 .chart-section {
-  background-color: #fff;
   margin: 20rpx;
-  padding: 30rpx;
+  background-color: #fff;
   border-radius: 12rpx;
-
+  padding: 20rpx;
+  
   .section-title {
-    font-size: 32rpx;
+    font-size: 28rpx;
     color: #333;
     margin-bottom: 20rpx;
+    display: block;
   }
-
+  
   .chart-container {
-    height: 600rpx;
-    width: 100%;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-  }
-}
-
-.category-list {
-  background-color: #fff;
-  margin: 0 20rpx 120rpx;
-  padding: 20rpx;
-  border-radius: 12rpx;
-
-  .category-item {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 20rpx 0;
-    border-bottom: 1px solid #f5f5f5;
-
-    &:last-child {
-      border-bottom: none;
-    }
-
-    .category-info {
+    min-height: 300rpx;
+    
+    .no-data {
+      height: 300rpx;
       display: flex;
       align-items: center;
-
-      .icon-wrapper {
-        width: 80rpx;
-        height: 80rpx;
-        border-radius: 50%;
+      justify-content: center;
+      color: #999;
+      font-size: 28rpx;
+    }
+    
+    .category-list-chart {
+      .category-item-chart {
         display: flex;
-        align-items: center;
-        justify-content: center;
-        margin-right: 20rpx;
-      }
-
-      .category-detail {
-        .name {
+        flex-direction: column;
+        margin-bottom: 30rpx;
+        
+        .category-info {
+          display: flex;
+          align-items: center;
+          margin-bottom: 10rpx;
+          
+          .icon-wrapper {
+            width: 60rpx;
+            height: 60rpx;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 20rpx;
+          }
+          
+          .category-detail {
+            flex: 1;
+            
+            .name {
+              font-size: 28rpx;
+              color: #333;
+              margin-right: 10rpx;
+            }
+            
+            .percent {
+              font-size: 24rpx;
+              color: #999;
+            }
+          }
+        }
+        
+        .progress-bar {
+          height: 20rpx;
+          background-color: #f5f5f5;
+          border-radius: 10rpx;
+          overflow: hidden;
+          margin: 10rpx 0;
+          
+          .progress {
+            height: 100%;
+            border-radius: 10rpx;
+          }
+        }
+        
+        .amount {
+          align-self: flex-end;
           font-size: 28rpx;
           color: #333;
-          margin-bottom: 6rpx;
-        }
-
-        .percent {
-          font-size: 24rpx;
-          color: #999;
         }
       }
-    }
-
-    .amount {
-      font-size: 32rpx;
-      color: #333;
     }
   }
 }

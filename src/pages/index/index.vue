@@ -25,12 +25,12 @@
           </picker>
         </view>
         <view class="filter-item">
-          <picker :range="paymentMethods" @change="handlePaymentMethodChange">
-            <view class="picker-content">
-              <text :class="['placeholder', selectedPaymentMethod ? 'selected' : '']">{{selectedPaymentMethod || '支付方式'}}</text>
-              <uni-icons type="bottom" size="14" color="#fff"></uni-icons>
-            </view>
-          </picker>
+          <view class="picker-content" @click="showTagSelector = true">
+            <text :class="['placeholder', selectedTags.length > 0 ? 'selected' : '']">
+              {{selectedTags.length > 0 ? (selectedTags.length > 1 ? `已选${selectedTags.length}个` : selectedTags[0].name) : '标签'}}
+            </text>
+            <uni-icons type="bottom" size="14" color="#fff"></uni-icons>
+          </view>
         </view>
         <view class="filter-item">
           <picker :range="accountTypes" @change="handleAccountTypeChange">
@@ -108,11 +108,33 @@
         <text>设置</text>
       </view>
     </view>
+
+    <!-- 标签选择弹窗 -->
+    <view class="tag-selector-mask" v-if="showTagSelector" @click="closeTagSelector">
+      <view class="tag-selector" @click.stop>
+        <view class="selector-header">
+          <text class="title">选择标签</text>
+          <text class="confirm" @click="confirmTagSelection">确定</text>
+        </view>
+        <view class="tag-list">
+          <view 
+            class="tag-item" 
+            v-for="(tag, index) in tagList" 
+            :key="tag.id"
+            @click="toggleTagSelection(tag)"
+            :class="{ 'selected': isTagSelected(tag) }"
+          >
+            <text class="tag-name">{{tag.name}}</text>
+            <uni-icons v-if="isTagSelected(tag)" type="checkmarkempty" size="18" color="#4CAF50"></uni-icons>
+          </view>
+        </view>
+      </view>
+    </view>
   </view>
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import iconfont from '@/components/iconfont/iconfont.vue'
 
 // 当前选择的日期
@@ -133,15 +155,118 @@ function formatDefaultDate() {
   return `${year}-${month}`
 }
 
+// 支付方式选项改为标签选项
+const tagList = ref([])
+const selectedTags = ref([])
+
+// 获取标签列表
+const fetchTags = async () => {
+  // 如果标签列表已经加载，则直接返回
+  if (tagList.value.length > 0) {
+    return Promise.resolve()
+  }
+  
+  try {
+    const response = await new Promise((resolve, reject) => {
+      uni.request({
+        url: '/api/tags',
+        method: 'GET',
+        success: (res) => {
+          resolve(res)
+        },
+        fail: (err) => {
+          reject(err)
+        }
+      })
+    })
+
+    if (response.statusCode === 200 && response.data.code === 200) {
+      // 添加"全部"选项
+      tagList.value = [{ id: -1, name: '全部' }, ...response.data.data]
+      return Promise.resolve()
+    } else {
+      uni.showToast({
+        title: response.data?.message || '获取标签失败',
+        icon: 'none'
+      })
+      return Promise.reject(new Error(response.data?.message || '获取标签失败'))
+    }
+  } catch (error) {
+    console.error('获取标签失败:', error)
+    uni.showToast({
+      title: '网络错误，请检查网络连接',
+      icon: 'none'
+    })
+    return Promise.reject(error)
+  }
+}
+
+// 标签选择相关
+const showTagSelector = ref(false)
+const tempSelectedTags = ref([])
+
+// 关闭标签选择器
+const closeTagSelector = () => {
+  showTagSelector.value = false
+}
+
+// 切换标签选择
+const toggleTagSelection = (tag) => {
+  // 如果选择的是"全部"
+  if (tag.id === -1) {
+    // 如果已经选择了"全部"，则取消选择
+    if (isAllSelected()) {
+      tempSelectedTags.value = []
+    } else {
+      // 否则只选择"全部"，取消其他所有标签的选择
+      tempSelectedTags.value = [tag]
+    }
+    return
+  }
+  
+  // 如果选择的是其他标签，则先取消"全部"的选择
+  tempSelectedTags.value = tempSelectedTags.value.filter(t => t.id !== -1)
+  
+  // 检查是否已经选择了该标签
+  const index = tempSelectedTags.value.findIndex(t => t.id === tag.id)
+  if (index > -1) {
+    // 已选择，则取消选择
+    tempSelectedTags.value.splice(index, 1)
+  } else {
+    // 未选择，则添加到选择列表
+    tempSelectedTags.value.push(tag)
+  }
+}
+
+// 确认标签选择
+const confirmTagSelection = () => {
+  selectedTags.value = [...tempSelectedTags.value]
+  showTagSelector.value = false
+  queryBills() // 选择标签后重新查询
+}
+
+// 检查标签是否被选中
+const isTagSelected = (tag) => {
+  return tempSelectedTags.value.some(t => t.id === tag.id)
+}
+
+// 检查是否选择了"全部"
+const isAllSelected = () => {
+  return tempSelectedTags.value.some(t => t.id === -1)
+}
+
 // 查询账单数据
 const queryBills = async () => {
   try {
     const params = {
       userId: 1, // 这里暂时写死，实际应该从用户登录信息中获取
       month: currentDate.value,
-      type: selectedBillType.value === '支出' ? '1' : 
-            selectedBillType.value === '收入' ? '2' : 
-            selectedBillType.value === '不计入收支' ? '3' : undefined
+      inoutType: selectedBillType.value === '支出' ? 1 : 
+                selectedBillType.value === '收入' ? 2 : 
+                selectedBillType.value === '不计入收支' ? 3 : undefined,
+      accountType: selectedAccountType.value === '储蓄账户' ? 1 :
+                  selectedAccountType.value === '信用账户' ? 2 : undefined,
+      tagIds: selectedTags.value.length > 0 ? selectedTags.value.map(tag => tag.id) : undefined
     }
 
     const response = await new Promise((resolve, reject) => {
@@ -191,9 +316,9 @@ const processBillData = () => {
     const timeStr = `${date.getHours().toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')}`
 
     // 计算总收支
-    if (bill.type === '1') { // 支出
+    if (bill.inoutType === 1) { // 支出
       expense += parseFloat(bill.amount)
-    } else if (bill.type === '2') { // 收入
+    } else if (bill.inoutType === 2) { // 收入
       income += parseFloat(bill.amount)
     }
 
@@ -208,17 +333,17 @@ const processBillData = () => {
     }
 
     const group = groups.get(dateStr)
-    if (bill.type === '1') {
+    if (bill.inoutType === 1) {
       group.expense = (parseFloat(group.expense) + parseFloat(bill.amount)).toFixed(2)
-    } else if (bill.type === '2') {
+    } else if (bill.inoutType === 2) {
       group.income = (parseFloat(group.income) + parseFloat(bill.amount)).toFixed(2)
     }
 
     group.items.push({
-      type: bill.type === '1' ? 'expense' : 'income',
+      type: bill.inoutType === 1 ? 'expense' : 'income',
       icon: bill.tags[0]?.icon || 'shop',
       time: timeStr,
-      amount: bill.type === '1' ? -parseFloat(bill.amount) : parseFloat(bill.amount),
+      amount: bill.inoutType === 1 ? -parseFloat(bill.amount) : parseFloat(bill.amount),
       tags: bill.tags || [],
       desc: bill.desc || ''
     })
@@ -258,10 +383,6 @@ const billGroups = ref([])
 const billTypes = ['全部', '支出', '收入', '不计入收支']
 const selectedBillType = ref('')
 
-// 支付方式选项
-const paymentMethods = ['全部', '支付宝', '微信', '现金', '银行卡']
-const selectedPaymentMethod = ref('')
-
 // 账户类型选项
 const accountTypes = ['全部', '信用账户', '储蓄账户']
 const selectedAccountType = ref('')
@@ -274,30 +395,28 @@ const formatDate = (date) => {
 
 // 切换月份
 const switchMonth = (offset) => {
-  const [year, month] = currentDate.value.split('-')
-  const date = new Date(parseInt(year), parseInt(month) - 1 + offset)
-  const newYear = date.getFullYear()
-  const newMonth = (date.getMonth() + 1).toString().padStart(2, '0')
-  currentDate.value = `${newYear}-${newMonth}`
-  queryBills() // 切换月份后重新查询
+  const date = new Date(currentDate.value)
+  date.setMonth(date.getMonth() + offset)
+  const year = date.getFullYear()
+  const month = (date.getMonth() + 1).toString().padStart(2, '0')
+  currentDate.value = `${year}-${month}`
+  
+  // 月份切换后重新查询账单，但不需要重新获取标签列表
+  queryBills()
 }
 
-// 日期选择处理
+// 处理日期选择
 const handleDateChange = (e) => {
   currentDate.value = e.detail.value
-  queryBills() // 选择日期后重新查询
+  
+  // 日期变更后重新查询账单，但不需要重新获取标签列表
+  queryBills()
 }
 
 // 处理账单类型选择
 const handleBillTypeChange = (e) => {
   selectedBillType.value = billTypes[e.detail.value]
   queryBills() // 选择账单类型后重新查询
-}
-
-// 处理支付方式选择
-const handlePaymentMethodChange = (e) => {
-  selectedPaymentMethod.value = paymentMethods[e.detail.value]
-  queryBills() // 选择支付方式后重新查询
 }
 
 // 处理账户类型选择
@@ -342,7 +461,11 @@ const getIconName = (tagName) => {
 
 // 页面加载时查询数据
 onMounted(() => {
-  queryBills()
+  // 先获取标签列表，确保标签列表已加载
+  fetchTags().then(() => {
+    // 标签列表加载完成后，再查询账单数据
+    queryBills()
+  })
 })
 
 // 页面跳转
@@ -596,6 +719,71 @@ const navigateTo = (url) => {
     
     &.active {
       color: #4CAF50;
+    }
+  }
+}
+
+.tag-selector-mask {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  z-index: 999;
+  display: flex;
+  align-items: flex-end;
+}
+
+.tag-selector {
+  background-color: #fff;
+  border-radius: 20rpx 20rpx 0 0;
+  padding: 30rpx;
+  width: 100%;
+  
+  .selector-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 30rpx;
+    
+    .title {
+      font-size: 32rpx;
+      font-weight: bold;
+      color: #333;
+    }
+    
+    .confirm {
+      font-size: 28rpx;
+      color: #4CAF50;
+      padding: 10rpx 20rpx;
+    }
+  }
+  
+  .tag-list {
+    display: flex;
+    flex-wrap: wrap;
+    
+    .tag-item {
+      width: 30%;
+      margin: 0 1.66% 20rpx;
+      height: 80rpx;
+      border-radius: 8rpx;
+      background-color: #f5f5f5;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 20rpx;
+      
+      &.selected {
+        background-color: rgba(76, 175, 80, 0.1);
+        border: 1px solid #4CAF50;
+      }
+      
+      .tag-name {
+        font-size: 28rpx;
+        color: #333;
+      }
     }
   }
 }

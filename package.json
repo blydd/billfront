@@ -51,7 +51,8 @@
     "@dcloudio/uni-mp-weixin": "3.0.0-4040520250104002",
     "@dcloudio/uni-mp-xhs": "3.0.0-4040520250104002",
     "@dcloudio/uni-quickapp-webview": "3.0.0-4040520250104002",
-    "@dcloudio/uni-ui": "^1.4.28",
+    "@dcloudio/uni-ui": "^1.5.7",
+    "@qiun/ucharts": "^2.5.0-20230101",
     "echarts": "^5.6.0",
     "ucharts": "^0.0.0",
     "vue": "^3.4.21",
@@ -66,5 +67,12 @@
     "@vue/runtime-core": "^3.4.21",
     "sass": "^1.86.1",
     "vite": "5.2.8"
+  },
+  "easycom": {
+  "autoscan": true,
+  "custom": {
+    "^uni-(.*)": "@dcloudio/uni-ui/lib/uni-$1/uni-$1.vue",
+    "^qiun-(.*)": "qiun-data-charts/components/qiun-$1/qiun-$1.vue"
   }
+}
 }

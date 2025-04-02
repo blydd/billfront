@@ -55,7 +55,7 @@
 		"autoscan": true,
 		"custom": {
 			"^uni-(.*)": "@dcloudio/uni-ui/lib/uni-$1/uni-$1.vue",
-			"^qiun-(.*)": "@/uni_modules/qiun-data-charts/components/qiun-$1/qiun-$1.vue"
+			"^qiun-(.*)": "@qiun/ucharts/components/qiun-$1/qiun-$1.vue"
 		}
 	}
 }
