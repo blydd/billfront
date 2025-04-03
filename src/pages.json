@@ -27,15 +27,21 @@
 		"list": [
 			{
 				"pagePath": "pages/index/index",
-				"text": "明细"
+				"text": "明细",
+				"iconPath": "static/icons/bill.svg",
+				"selectedIconPath": "static/icons/bill-active.svg"
 			},
 			{
 				"pagePath": "pages/statistics/index",
-				"text": "统计"
+				"text": "统计",
+				"iconPath": "static/icons/chart.svg",
+				"selectedIconPath": "static/icons/chart-active.svg"
 			},
 			{
 				"pagePath": "pages/settings/index",
-				"text": "设置"
+				"text": "设置",
+				"iconPath": "static/icons/settings.svg",
+				"selectedIconPath": "static/icons/settings-active.svg"
 			}
 		]
 	},
