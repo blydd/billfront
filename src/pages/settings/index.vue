@@ -69,20 +69,30 @@
           
           <view class="form-item">
             <text class="label">标签类型</text>
-            <picker :value="tagForm.tagType - 1" :range="tagTypeOptions" range-key="label" @change="handleTagTypeChange">
-              <view class="picker-value">
-                {{tagTypeOptions.find(item => item.value === tagForm.tagType)?.label}}
+            <view class="button-group">
+              <view 
+                v-for="option in tagTypeOptions" 
+                :key="option.value"
+                :class="['button-option', tagForm.tagType === option.value ? 'active' : '']"
+                @click="tagForm.tagType = option.value"
+              >
+                {{option.label}}
               </view>
-            </picker>
+            </view>
           </view>
           
           <view class="form-item" v-if="tagForm.tagType === 1">
             <text class="label">账户类型</text>
-            <picker :value="accountTypeIndex" :range="accountTypeOptions" @change="handleAccountTypeChange">
-              <view class="picker-value">
-                {{getAccountTypeName(tagForm.accountType) || '请选择账户类型'}}
+            <view class="button-group">
+              <view 
+                v-for="(option, index) in accountTypeOptions" 
+                :key="index"
+                :class="['button-option', tagForm.accountType === index + 1 ? 'active' : '']"
+                @click="tagForm.accountType = index + 1"
+              >
+                {{option}}
               </view>
-            </picker>
+            </view>
           </view>
         </view>
         
@@ -848,5 +858,35 @@ onMounted(() => {
   color: #666;
   display: flex;
   align-items: center;
+}
+
+.button-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 20rpx;
+  
+  .button-option {
+    flex: 1;
+    min-width: 160rpx;
+    height: 80rpx;
+    background-color: #f5f5f5;
+    border-radius: 12rpx;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 28rpx;
+    color: #666;
+    transition: all 0.3s ease;
+    
+    &.active {
+      background-color: #4CAF50;
+      color: #fff;
+      box-shadow: 0 2rpx 8rpx rgba(76, 175, 80, 0.3);
+    }
+    
+    &:active {
+      transform: scale(0.98);
+    }
+  }
 }
 </style> 
