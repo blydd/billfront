@@ -40,14 +40,28 @@
         </view>
       </view>
       
-      <view class="filter-section">
-        <view class="filter-item">
-          <picker :range="accountTypes" @change="handleAccountTypeChange">
-            <view class="picker-content">
-              <text :class="['placeholder', selectedAccountType ? 'selected' : '']">{{selectedAccountType || '账户类型'}}</text>
-              <text class="icon-text">▼</text>
-            </view>
-          </picker>
+      <!-- 账户类型筛选 -->
+      <view class="account-type-filter">
+        <view 
+          class="account-type-btn" 
+          :class="{ active: selectedAccountType === '' }"
+          @click="handleAccountTypeSelect('')"
+        >
+          全部
+        </view>
+        <view 
+          class="account-type-btn" 
+          :class="{ active: selectedAccountType === '储蓄账户' }"
+          @click="handleAccountTypeSelect('储蓄账户')"
+        >
+          储蓄账户
+        </view>
+        <view 
+          class="account-type-btn" 
+          :class="{ active: selectedAccountType === '信用账户' }"
+          @click="handleAccountTypeSelect('信用账户')"
+        >
+          信用账户
         </view>
       </view>
       
@@ -197,9 +211,9 @@ const selectTag = (tagId) => {
 }
 
 // 处理账户类型选择
-const handleAccountTypeChange = (e) => {
-  selectedAccountType.value = accountTypes.value[e.detail.value]
-  queryBills() // 选择账户类型后重新查询
+const handleAccountTypeSelect = (type) => {
+  selectedAccountType.value = type;
+  queryBills();
 }
 
 // 获取默认日期（当前月份）
@@ -578,35 +592,22 @@ const navigateTo = (url) => {
     }
   }
   
-  .filter-section {
+  .account-type-filter {
     display: flex;
+    padding: 0 20rpx;
     margin-bottom: 20rpx;
     
-    .filter-item {
-      margin-right: 20rpx;
+    .account-type-btn {
+      padding: 12rpx 24rpx;
+      margin-right: 16rpx;
+      background-color: rgba(255, 255, 255, 0.1);
+      color: rgba(255, 255, 255, 0.8);
+      border-radius: 30rpx;
+      font-size: 24rpx;
       
-      .picker-content {
-        display: flex;
-        align-items: center;
-        background-color: rgba(255, 255, 255, 0.1);
-        padding: 8rpx 16rpx;
-        border-radius: 8rpx;
-        
-        .placeholder {
-          font-size: 24rpx;
-          color: rgba(255, 255, 255, 0.8);
-          margin-right: 8rpx;
-          max-width: 120rpx;
-          
-          &.selected {
-            color: #fff;
-          }
-        }
-
-        .icon-text {
-          font-size: 16rpx;
-          margin-left: 8rpx;
-        }
+      &.active {
+        background-color: #fff;
+        color: #4CAF50;
       }
     }
   }
