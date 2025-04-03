@@ -102,7 +102,10 @@
           </view>
           
           <view class="bill-items">
-            <view class="bill-item" v-for="(item, index) in group.items" :key="index">
+            <view class="bill-item" 
+                  v-for="(item, index) in group.items" 
+                  :key="index"
+                  @click="showBillDetail(item)">
               <view class="left">
                 <view class="icon" :class="item.type">
                   <text class="icon-text">{{getFirstChar(item)}}</text>
@@ -270,6 +273,88 @@
         </view>
       </view>
     </view>
+
+    <!-- 账单详情弹框 -->
+    <view v-if="showDetailModal" class="modal-wrapper">
+      <view class="modal-mask" @click="closeDetailModal"></view>
+      <view class="bill-modal" @click.stop>
+        <view class="modal-header">
+          <text class="title">账单详情</text>
+          <view class="close-btn" @click="closeDetailModal">
+            <text class="close-icon">×</text>
+          </view>
+        </view>
+        
+        <view class="modal-content">
+          <view class="form-item">
+            <text class="label">金额</text>
+            <input type="digit" v-model="billDetail.amount" placeholder="请输入金额" />
+          </view>
+          
+          <view class="form-item">
+            <text class="label">描述</text>
+            <input type="text" v-model="billDetail.remark" placeholder="请输入账单描述" />
+          </view>
+          
+          <view class="form-item">
+            <text class="label">收支类型</text>
+            <view class="type-selector">
+              <view 
+                class="type-item" 
+                :class="{ active: billDetail.inoutType === 1 }"
+                @click="billDetail.inoutType = 1"
+              >
+                支出
+              </view>
+              <view 
+                class="type-item" 
+                :class="{ active: billDetail.inoutType === 2 }"
+                @click="billDetail.inoutType = 2"
+              >
+                收入
+              </view>
+              <view 
+                class="type-item" 
+                :class="{ active: billDetail.inoutType === 3 }"
+                @click="billDetail.inoutType = 3"
+              >
+                不计入收支
+              </view>
+            </view>
+          </view>
+          
+          <view class="form-item">
+            <text class="label">标签</text>
+            <view class="tag-selector">
+              <view 
+                v-for="(tag, index) in filteredTagsForDetail" 
+                :key="index"
+                :class="['tag-select-item', billDetail.tags.includes(tag.id) ? 'active' : '']"
+                @click="toggleDetailTag(tag.id)"
+              >
+                {{tag.name}}
+              </view>
+              <view v-if="filteredTagsForDetail.length === 0" class="empty-tags">
+                暂无匹配的标签，请先在设置中添加标签
+              </view>
+            </view>
+          </view>
+          
+          <view class="form-item">
+            <text class="label">日期</text>
+            <view class="date-picker" @click="showDatePickerForDetail">
+              {{billDetail.billDate}}
+            </view>
+          </view>
+        </view>
+        
+        <view class="modal-footer detail-footer">
+          <button class="cancel-btn" @click="closeDetailModal">取消</button>
+          <button class="delete-btn" @click="deleteBill">删除</button>
+          <button class="confirm-btn" @click="updateBill">保存</button>
+        </view>
+      </view>
+    </view>
   </view>
 </template>
 
@@ -298,6 +383,7 @@ const totalIncome = ref('0.00')
 // 弹框显示状态
 const showModal = ref(false)
 const showDatePickerModal = ref(false)
+const showDetailModal = ref(false)
 
 // 账单表单数据
 const billForm = ref({
@@ -308,9 +394,24 @@ const billForm = ref({
   billDate: formatCurrentDate()
 })
 
+// 账单详情数据
+const billDetail = ref({
+  id: null,
+  amount: '',
+  remark: '',
+  inoutType: 1,
+  tags: [],
+  billDate: ''
+})
+
 // 根据收支类型过滤标签
 const filteredTags = computed(() => {
   return tagList.value.filter(tag => tag.inoutType === billForm.value.inoutType)
+})
+
+// 根据收支类型过滤标签（详情页）
+const filteredTagsForDetail = computed(() => {
+  return tagList.value.filter(tag => tag.inoutType === billDetail.value.inoutType)
 })
 
 // 格式化当前日期为 YYYY-MM-DD
@@ -748,28 +849,26 @@ const tempDate = ref('')
 const maskStyle = 'background-image: linear-gradient(180deg, rgba(255, 255, 255, 0.95), rgba(255, 255, 255, 0.6)), linear-gradient(0deg, rgba(255, 255, 255, 0.95), rgba(255, 255, 255, 0.6));'
 
 // 初始化日期选择器数据
-const initDatePicker = () => {
-  const currentYear = new Date().getFullYear()
+const initDatePicker = (date) => {
+  const currentYear = date.getFullYear()
+  const currentMonth = date.getMonth() + 1
+  const currentDay = date.getDate()
+  const currentHour = date.getHours()
+  const currentMinute = date.getMinutes()
+  const currentSecond = date.getSeconds()
+  
   // 生成年份数据，从当前年份往前10年，往后10年
   years.value = Array.from({length: 21}, (_, i) => currentYear - 10 + i)
   // 生成月份数据
   months.value = Array.from({length: 12}, (_, i) => i + 1)
   // 生成天数数据，默认31天
-  updateDays(currentYear, 1)
+  updateDays(currentYear, currentMonth)
   // 生成小时数据
   hours.value = Array.from({length: 24}, (_, i) => i)
   // 生成分钟数据
   minutes.value = Array.from({length: 60}, (_, i) => i)
   // 生成秒数据
   seconds.value = Array.from({length: 60}, (_, i) => i)
-  
-  // 获取当前系统时间
-  const now = new Date()
-  const currentMonth = now.getMonth() + 1
-  const currentDay = now.getDate()
-  const currentHour = now.getHours()
-  const currentMinute = now.getMinutes()
-  const currentSecond = now.getSeconds()
   
   // 设置当前日期和时间
   if (billForm.value.billDate) {
@@ -867,7 +966,7 @@ const onDatePickerChange = (e) => {
 
 // 显示日期选择器
 const showDatePicker = () => {
-  initDatePicker()
+  initDatePicker(new Date())
   showDatePickerModal.value = true
 }
 
@@ -880,6 +979,221 @@ const closeDatePicker = () => {
 const confirmDatePicker = () => {
   billForm.value.billDate = tempDate.value
   closeDatePicker()
+}
+
+// 显示账单详情弹框
+const showBillDetail = async (bill) => {
+  try {
+    uni.showLoading({
+      title: '加载中...'
+    })
+    
+    const response = await new Promise((resolve, reject) => {
+      uni.request({
+        url: `/api/bills/${bill.id}`,
+        method: 'GET',
+        success: (res) => {
+          resolve(res)
+        },
+        fail: (err) => {
+          reject(err)
+        }
+      })
+    })
+    
+    uni.hideLoading()
+    
+    if (response.statusCode === 200 && response.data.code === 200) {
+      const billData = response.data.data
+      
+      // 转换标签数据
+      const tagIds = billData.tags ? billData.tags.map(tag => tag.id) : []
+      
+      billDetail.value = {
+        id: billData.id,
+        amount: billData.amount.toString(),
+        remark: billData.remark || '',
+        inoutType: billData.inoutType,
+        tags: tagIds,
+        billDate: billData.billDate
+      }
+      
+      showDetailModal.value = true
+    } else {
+      uni.showToast({
+        title: response.data?.message || '获取账单详情失败',
+        icon: 'none'
+      })
+    }
+  } catch (error) {
+    uni.hideLoading()
+    console.error('获取账单详情失败:', error)
+    uni.showToast({
+      title: '网络错误，请检查网络连接',
+      icon: 'none'
+    })
+  }
+}
+
+// 关闭账单详情弹框
+const closeDetailModal = () => {
+  showDetailModal.value = false
+  billDetail.value = {
+    id: null,
+    amount: '',
+    remark: '',
+    inoutType: 1,
+    tags: [],
+    billDate: ''
+  }
+}
+
+// 切换标签选择（用于详情页）
+const toggleDetailTag = (tagId) => {
+  const index = billDetail.value.tags.indexOf(tagId)
+  if (index === -1) {
+    billDetail.value.tags.push(tagId)
+  } else {
+    billDetail.value.tags.splice(index, 1)
+  }
+}
+
+// 显示日期选择器（用于详情页）
+const showDatePickerForDetail = () => {
+  // 设置当前选择的日期为账单日期
+  const billDate = new Date(billDetail.value.billDate)
+  
+  // 初始化日期选择器
+  initDatePicker(billDate)
+  
+  // 标记当前是为详情页选择日期
+  isDetailDatePicker.value = true
+  
+  showDatePickerModal.value = true
+}
+
+// 更新账单
+const updateBill = async () => {
+  // 表单验证
+  if (!billDetail.value.amount) {
+    uni.showToast({
+      title: '请输入金额',
+      icon: 'none'
+    })
+    return
+  }
+  
+  if (!billDetail.value.remark) {
+    uni.showToast({
+      title: '请输入描述',
+      icon: 'none'
+    })
+    return
+  }
+  
+  try {
+    uni.showLoading({
+      title: '保存中...'
+    })
+    
+    const response = await new Promise((resolve, reject) => {
+      uni.request({
+        url: `/api/bills/${billDetail.value.id}`,
+        method: 'PUT',
+        data: {
+          amount: parseFloat(billDetail.value.amount),
+          remark: billDetail.value.remark,
+          inoutType: billDetail.value.inoutType,
+          tagIds: billDetail.value.tags,
+          billDate: billDetail.value.billDate
+        },
+        success: (res) => {
+          resolve(res)
+        },
+        fail: (err) => {
+          reject(err)
+        }
+      })
+    })
+    
+    uni.hideLoading()
+    
+    if (response.statusCode === 200 && response.data.code === 200) {
+      uni.showToast({
+        title: '更新成功',
+        icon: 'success'
+      })
+      closeDetailModal()
+      queryBills() // 重新查询账单列表
+    } else {
+      uni.showToast({
+        title: response.data?.message || '更新失败',
+        icon: 'none'
+      })
+    }
+  } catch (error) {
+    uni.hideLoading()
+    console.error('更新账单失败:', error)
+    uni.showToast({
+      title: '网络错误，请检查网络连接',
+      icon: 'none'
+    })
+  }
+}
+
+// 删除账单
+const deleteBill = () => {
+  uni.showModal({
+    title: '删除账单',
+    content: '确定要删除这条账单记录吗？',
+    confirmText: '删除',
+    confirmColor: '#EE6666',
+    success: async (res) => {
+      if (res.confirm) {
+        try {
+          uni.showLoading({
+            title: '删除中...'
+          })
+          
+          const response = await new Promise((resolve, reject) => {
+            uni.request({
+              url: `/api/bills/${billDetail.value.id}`,
+              method: 'DELETE',
+              success: (res) => {
+                resolve(res)
+              },
+              fail: (err) => {
+                reject(err)
+              }
+            })
+          })
+          
+          uni.hideLoading()
+          
+          if (response.statusCode === 200 && response.data.code === 200) {
+            uni.showToast({
+              title: '删除成功',
+              icon: 'success'
+            })
+            closeDetailModal()
+            queryBills() // 重新查询账单列表
+          } else {
+            uni.showToast({
+              title: response.data?.message || '删除失败',
+              icon: 'none'
+            })
+          }
+        } catch (error) {
+          uni.hideLoading()
+          console.error('删除账单失败:', error)
+          uni.showToast({
+            title: '网络错误，请检查网络连接',
+            icon: 'none'
+          })
+        }
+      }
+    }
+  })
 }
 </script>
 
@@ -1521,6 +1835,30 @@ const confirmDatePicker = () => {
         }
       }
     }
+  }
+}
+
+.detail-footer {
+  display: flex;
+  justify-content: space-between;
+  
+  button {
+    flex: 1;
+    margin: 0 10rpx;
+    
+    &.delete-btn {
+      background-color: #f5f5f5;
+      color: #EE6666;
+    }
+  }
+}
+
+.bill-item {
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+  
+  &:active {
+    background-color: #f9f9f9;
   }
 }
 </style>

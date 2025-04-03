@@ -19,21 +19,28 @@
       </view>
 
       <!-- 分类列表 -->
-      <view class="category-grid">
-        <view class="category-item" 
-              v-for="item in filteredCategories" 
-              :key="item.id"
-              @tap="editTag(item)"
-              @touchstart="touchStart(item)"
-              @touchend="touchEnd(item)"
-              @touchmove="touchMove">
-          <view class="icon" :class="[`tag-type-${item.inoutType}`, `tag-style-${item.tagType}`]">
-            <text class="icon-text">{{item.name.substring(0, 1)}}</text>
-          </view>
-          <text class="name">{{item.name}}</text>
+      <view class="category-section" v-for="(group, groupIndex) in groupedCategories" :key="groupIndex">
+        <view class="group-header">
+          <text class="group-title">{{getTagTypeLabel(group.tagType)}}</text>
         </view>
-        
-        <!-- 添加按钮 -->
+        <view class="category-grid">
+          <view class="category-item" 
+                v-for="item in group.items" 
+                :key="item.id"
+                @tap="editTag(item)"
+                @touchstart="touchStart(item)"
+                @touchend="touchEnd(item)"
+                @touchmove="touchMove">
+            <view class="icon" :class="[`tag-type-${item.inoutType}`, `tag-style-${item.tagType}`]">
+              <text class="icon-text">{{item.name.substring(0, 1)}}</text>
+            </view>
+            <text class="name">{{item.name}}</text>
+          </view>
+        </view>
+      </view>
+
+      <!-- 添加按钮 -->
+      <view class="add-button-section">
         <view class="category-item add-item" @click="addTag">
           <view class="icon add-icon">
             <text class="icon-text">+</text>
@@ -67,7 +74,7 @@
             </view>
           </view>
           
-          <view class="form-item">
+          <view class="form-item" v-if="tagForm.inoutType !== 3">
             <text class="label">标签类型</text>
             <view class="button-group">
               <view 
@@ -81,7 +88,7 @@
             </view>
           </view>
           
-          <view class="form-item" v-if="tagForm.tagType === 1">
+          <view class="form-item" v-if="tagForm.tagType === 1 && tagForm.inoutType !== 3">
             <text class="label">账户类型</text>
             <view class="button-group">
               <view 
@@ -134,7 +141,8 @@ const tagForm = ref({
 // 标签类型选项
 const tagTypeOptions = [
   { value: 1, label: '支付方式' },
-  { value: 2, label: '账单类型' }
+  { value: 2, label: '账单类型' },
+  { value: 3, label: '归属人' }
 ]
 
 // 账户类型选项
@@ -220,6 +228,13 @@ const addTag = async () => {
     'other': 3
   }
   tagForm.value.inoutType = typeMap[activeType.value]
+  
+  // 如果是"不计入收支"类型，默认设置为账单类型
+  if (tagForm.value.inoutType === 3) {
+    tagForm.value.tagType = 2 // 账单类型
+    tagForm.value.accountType = null
+  }
+  
   showPopup.value = true
 }
 
@@ -496,6 +511,40 @@ const resetForm = () => {
 onMounted(() => {
   fetchTags()
 })
+
+// 根据标签类型分组的分类列表
+const groupedCategories = computed(() => {
+  const typeMap = {
+    'expense': 1,
+    'income': 2,
+    'other': 3
+  }
+  const currentType = typeMap[activeType.value]
+  
+  // 筛选当前类型的标签
+  const filteredTags = categories.value.filter(item => item.inoutType === currentType)
+  
+  // 按tagType分组
+  const groups = {}
+  filteredTags.forEach(tag => {
+    if (!groups[tag.tagType]) {
+      groups[tag.tagType] = {
+        tagType: tag.tagType,
+        items: []
+      }
+    }
+    groups[tag.tagType].items.push(tag)
+  })
+  
+  // 转换为数组并排序
+  return Object.values(groups).sort((a, b) => a.tagType - b.tagType)
+})
+
+// 获取标签类型的显示名称
+const getTagTypeLabel = (tagType) => {
+  const option = tagTypeOptions.find(opt => opt.value === tagType)
+  return option ? option.label : '未知类型'
+}
 </script>
 
 <style lang="scss">
@@ -549,6 +598,21 @@ onMounted(() => {
     &.active {
       background-color: #4CAF50;
       color: #fff;
+    }
+  }
+}
+
+.category-section {
+  margin-bottom: 30rpx;
+  
+  .group-header {
+    padding: 10rpx 20rpx;
+    margin-bottom: 10rpx;
+    
+    .group-title {
+      font-size: 28rpx;
+      color: #666;
+      font-weight: 500;
     }
   }
 }
@@ -643,6 +707,16 @@ onMounted(() => {
         font-weight: 500;
       }
     }
+  }
+}
+
+.add-button-section {
+  display: flex;
+  justify-content: center;
+  padding: 20rpx;
+  
+  .category-item {
+    width: auto;
   }
 }
 
