@@ -5,13 +5,13 @@
       <view class="month-picker">
         <view class="month-switcher">
           <view class="arrow" @click="switchMonth(-1)">
-            <uni-icons type="left" size="20" color="#fff"></uni-icons>
+            <text class="icon-text">&lt;</text>
           </view>
           <picker mode="date" fields="month" :value="currentDate" @change="handleDateChange">
-            <view class="picker-text">{{formatDate(currentDate)}}</view>
+            <view class="picker-text">{{formatDate(currentDate)}} ></view>
           </picker>
           <view class="arrow" @click="switchMonth(1)">
-            <uni-icons type="right" size="20" color="#fff"></uni-icons>
+            <text class="icon-text">&gt;</text>
           </view>
         </view>
       </view>
@@ -34,7 +34,7 @@
             <picker :range="tagTypes" @change="handleTagTypeChange">
               <view class="picker-content">
                 <text :class="['placeholder', selectedTagType ? 'selected' : '']">{{selectedTagType || '标签类别'}}</text>
-                <uni-icons type="bottom" size="14" color="#fff"></uni-icons>
+                <text class="icon-text">▼</text>
               </view>
             </picker>
           </view>
@@ -44,7 +44,7 @@
             <picker :range="accountTypes" @change="handleAccountTypeChange">
               <view class="picker-content">
                 <text :class="['placeholder', selectedAccountType ? 'selected' : '']">{{selectedAccountType || '账户类型'}}</text>
-                <uni-icons type="bottom" size="14" color="#fff"></uni-icons>
+                <text class="icon-text">▼</text>
               </view>
             </picker>
           </view>
@@ -69,7 +69,7 @@
           <view class="category-item-chart" v-for="(item, index) in categories" :key="index">
             <view class="category-info">
               <view class="icon-wrapper" :style="{ backgroundColor: item.color }">
-                <iconfont :name="item.icon" size="24" color="#fff"></iconfont>
+                <text class="icon-text">{{item.name.substring(0, 1)}}</text>
               </view>
               <view class="category-detail">
                 <text class="name">{{item.name}}</text>
@@ -88,15 +88,15 @@
     <!-- 底部导航栏 -->
     <view class="tab-bar">
       <view class="tab-item" @click="navigateTo('/pages/index/index')">
-        <uni-icons type="list" size="24" color="#666"></uni-icons>
+        <text class="tab-icon">📋</text>
         <text>明细</text>
       </view>
       <view class="tab-item active">
-        <uni-icons type="chart" size="24" color="#4CAF50"></uni-icons>
+        <text class="tab-icon">📊</text>
         <text>统计</text>
       </view>
       <view class="tab-item" @click="navigateTo('/pages/settings/index')">
-        <uni-icons type="gear" size="24" color="#666"></uni-icons>
+        <text class="tab-icon">⚙️</text>
         <text>设置</text>
       </view>
     </view>
@@ -105,7 +105,6 @@
 
 <script setup>
 import { ref, computed, onMounted, watch } from 'vue'
-import iconfont from '@/components/iconfont/iconfont.vue'
 import { onLoad } from '@dcloudio/uni-app'
 
 // 当前选择的日期
@@ -256,7 +255,6 @@ const calculateCategoryStats = () => {
         categoryMap.set(tag.name, {
           name: tag.name,
           amount: 0,
-          icon: getIconName(tag.name),
           color: getTagColor(categoryMap.size) // 使用索引生成不同的颜色
         })
       }
@@ -279,25 +277,6 @@ const calculateCategoryStats = () => {
   
   // 按金额降序排序
   return result.sort((a, b) => parseFloat(b.amount) - parseFloat(a.amount))
-}
-
-// 获取标签对应的图标
-const getIconName = (tagName) => {
-  // 这里可以根据标签名返回对应的图标名称
-  const iconMap = {
-    '餐饮': 'food',
-    '购物': 'shopping',
-    '交通': 'transport',
-    '娱乐': 'entertainment',
-    '医疗': 'medical',
-    '教育': 'education',
-    '旅行': 'travel',
-    '住房': 'house',
-    '工资': 'salary',
-    '奖金': 'bonus'
-  }
-  
-  return iconMap[tagName] || 'other'
 }
 
 // 获取标签颜色
@@ -446,9 +425,9 @@ const navigateTo = (url) => {
             }
           }
 
-          uni-icons {
+          .icon-text {
+            font-size: 16rpx;
             margin-left: 8rpx;
-            flex-shrink: 0;
           }
         }
       }
@@ -514,6 +493,12 @@ const navigateTo = (url) => {
             align-items: center;
             justify-content: center;
             margin-right: 20rpx;
+            
+            .icon-text {
+              color: #fff;
+              font-size: 24rpx;
+              font-weight: bold;
+            }
           }
           
           .category-detail {
@@ -577,6 +562,11 @@ const navigateTo = (url) => {
     
     &.active {
       color: #4CAF50;
+    }
+    
+    .tab-icon {
+      font-size: 32rpx;
+      margin-bottom: 4rpx;
     }
   }
 }
