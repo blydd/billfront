@@ -18,30 +18,46 @@
       
       <!-- 标签筛选 -->
       <view class="tag-filter">
+        <!-- 收支类型切换 -->
+        <view class="type-tabs">
+          <view 
+            v-for="type in ['支出', '收入', '不计入收支']" 
+            :key="type"
+            :class="['tab-item', tagFilterType === getTypeValue(type) ? 'active' : '']"
+            @click="tagFilterType = getTypeValue(type)"
+          >
+            <text>{{type}}</text>
+          </view>
+        </view>
+        
         <scroll-view scroll-y class="tag-scroll">
-          <view class="tag-group" v-for="(group, index) in groupedTags" :key="index">
+          <view class="tag-group" v-for="(group, index) in filteredGroupedTags" :key="index">
             <view class="group-title">{{getTagTypeLabel(group.tagType)}}</view>
             <view class="tag-list">
               <view 
                 v-for="(tag, tagIndex) in group.items" 
                 :key="tagIndex" 
-                :class="[
-                  'tag-item', 
-                  `tag-type-${tag.inoutType}`, 
-                  `tag-style-${tag.tagType}`,
-                  selectedTags.includes(tag.id) ? 'active' : ''
-                ]"
+                :class="['tag-item', selectedTags.includes(tag.id) ? 'active' : '']"
                 @click="selectTag(tag.id)"
               >
-                {{tag.name}}
+                <view class="tag-icon" :class="[`tag-type-${tag.inoutType}`, `tag-style-${tag.tagType}`]">
+                  <text class="icon-text">{{tag.name.substring(0, 1)}}</text>
+                </view>
+                <text class="tag-name">{{tag.name}}</text>
               </view>
             </view>
           </view>
         </scroll-view>
         
-        <view class="all-tags-btn" @click="selectTag('all')">
-          <view :class="['tag-item', 'all-tag', selectedTags.length === 0 ? 'active' : '']">
-            全部
+        <view class="all-tags-btn">
+          <view 
+            :class="['tag-item', 'all-tag', selectedTags.length === 0 ? 'active' : '']"
+            @click="selectTag('all')"
+          >
+            <view class="tag-icon all-icon">
+              <text class="icon-text">全</text>
+            </view>
+            <text class="tag-name">全部</text>
           </view>
         </view>
       </view>
@@ -206,17 +222,26 @@
             </view>
           </view>
           
-          <view class="form-item">
+          <view class="form-item tag-form-item">
             <text class="label">标签</text>
             <view class="tag-selector">
-              <view 
-                v-for="(tag, index) in filteredTags" 
-                :key="index"
-                :class="['tag-select-item', billForm.tags.includes(tag.id) ? 'active' : '']"
-                @click="toggleTag(tag.id)"
-              >
-                {{tag.name}}
+              <view class="tag-group" v-for="(group, index) in groupedTagsForForm" :key="index">
+                <view class="group-title">{{getTagTypeLabel(group.tagType)}}</view>
+                <view class="tag-grid">
+                  <view 
+                    v-for="(tag, tagIndex) in group.items" 
+                    :key="tagIndex"
+                    :class="['tag-select-item', billForm.tags.includes(tag.id) ? 'active' : '']"
+                    @click="toggleTag(tag.id)"
+                  >
+                    <view class="tag-icon" :class="[`tag-type-${tag.inoutType}`, `tag-style-${tag.tagType}`]">
+                      <text class="icon-text">{{tag.name.substring(0, 1)}}</text>
+                    </view>
+                    <text class="tag-name">{{tag.name}}</text>
+                  </view>
+                </view>
               </view>
+              
               <view v-if="filteredTags.length === 0" class="empty-tags">
                 暂无匹配的标签，请先在设置中添加标签
               </view>
@@ -329,17 +354,26 @@
             </view>
           </view>
           
-          <view class="form-item">
+          <view class="form-item tag-form-item">
             <text class="label">标签</text>
             <view class="tag-selector">
-              <view 
-                v-for="(tag, index) in filteredTagsForDetail" 
-                :key="index"
-                :class="['tag-select-item', billDetail.tags.includes(tag.id) ? 'active' : '']"
-                @click="toggleDetailTag(tag.id)"
-              >
-                {{tag.name}}
+              <view class="tag-group" v-for="(group, index) in groupedTagsForDetail" :key="index">
+                <view class="group-title">{{getTagTypeLabel(group.tagType)}}</view>
+                <view class="tag-grid">
+                  <view 
+                    v-for="(tag, tagIndex) in group.items" 
+                    :key="tagIndex"
+                    :class="['tag-select-item', billDetail.tags.includes(tag.id) ? 'active' : '']"
+                    @click="toggleDetailTag(tag.id)"
+                  >
+                    <view class="tag-icon" :class="[`tag-type-${tag.inoutType}`, `tag-style-${tag.tagType}`]">
+                      <text class="icon-text">{{tag.name.substring(0, 1)}}</text>
+                    </view>
+                    <text class="tag-name">{{tag.name}}</text>
+                  </view>
+                </view>
               </view>
+              
               <view v-if="filteredTagsForDetail.length === 0" class="empty-tags">
                 暂无匹配的标签，请先在设置中添加标签
               </view>
@@ -358,6 +392,19 @@
           <button class="cancel-btn" @click="closeDetailModal">取消</button>
           <button class="delete-btn" @click="deleteBill">删除</button>
           <button class="confirm-btn" @click="updateBill">保存</button>
+        </view>
+      </view>
+    </view>
+
+    <!-- 自定义确认弹窗 -->
+    <view v-if="showDeleteConfirm" class="custom-confirm-modal">
+      <view class="confirm-mask" @click="closeDeleteConfirm"></view>
+      <view class="confirm-content">
+        <view class="confirm-title">删除账单</view>
+        <view class="confirm-message">确定要删除这条账单记录吗？</view>
+        <view class="confirm-buttons">
+          <button class="cancel-btn" @click="closeDeleteConfirm">取消</button>
+          <button class="delete-btn" @click="performDelete">删除</button>
         </view>
       </view>
     </view>
@@ -390,6 +437,7 @@ const totalIncome = ref('0.00')
 const showModal = ref(false)
 const showDatePickerModal = ref(false)
 const showDetailModal = ref(false)
+const showDeleteConfirm = ref(false)
 
 // 账单表单数据
 const billForm = ref({
@@ -410,14 +458,42 @@ const billDetail = ref({
   billDate: ''
 })
 
-// 根据收支类型过滤标签
-const filteredTags = computed(() => {
-  return tagList.value.filter(tag => tag.inoutType === billForm.value.inoutType)
-})
+// 标签筛选类型
+const tagFilterType = ref('expense')
 
-// 根据收支类型过滤标签（详情页）
-const filteredTagsForDetail = computed(() => {
-  return tagList.value.filter(tag => tag.inoutType === billDetail.value.inoutType)
+// 根据类型值获取类型名称
+const getTypeValue = (typeName) => {
+  const typeMap = {
+    '支出': 'expense',
+    '收入': 'income',
+    '不计入收支': 'other'
+  }
+  return typeMap[typeName]
+}
+
+// 根据筛选类型过滤的标签分组
+const filteredGroupedTags = computed(() => {
+  const typeMap = {
+    'expense': 1,
+    'income': 2,
+    'other': 3
+  }
+  const currentType = typeMap[tagFilterType.value]
+  
+  // 按tagType分组
+  const groups = {}
+  tagList.value.filter(tag => tag.inoutType === currentType).forEach(tag => {
+    if (!groups[tag.tagType]) {
+      groups[tag.tagType] = {
+        tagType: tag.tagType,
+        items: []
+      }
+    }
+    groups[tag.tagType].items.push(tag)
+  })
+  
+  // 转换为数组并排序
+  return Object.values(groups).sort((a, b) => a.tagType - b.tagType)
 })
 
 // 标签类型选项
@@ -1180,58 +1256,106 @@ const updateBill = async () => {
 
 // 删除账单
 const deleteBill = () => {
-  uni.showModal({
-    title: '删除账单',
-    content: '确定要删除这条账单记录吗？',
-    confirmText: '删除',
-    confirmColor: '#EE6666',
-    success: async (res) => {
-      if (res.confirm) {
-        try {
-          uni.showLoading({
-            title: '删除中...'
-          })
-          
-          const response = await new Promise((resolve, reject) => {
-            uni.request({
-              url: `/api/bills/${billDetail.value.id}`,
-              method: 'DELETE',
-              success: (res) => {
-                resolve(res)
-              },
-              fail: (err) => {
-                reject(err)
-              }
-            })
-          })
-          
-          uni.hideLoading()
-          
-          if (response.statusCode === 200 && response.data.code === 200) {
-            uni.showToast({
-              title: '删除成功',
-              icon: 'success'
-            })
-            closeDetailModal()
-            queryBills() // 重新查询账单列表
-          } else {
-            uni.showToast({
-              title: response.data?.message || '删除失败',
-              icon: 'none'
-            })
-          }
-        } catch (error) {
-          uni.hideLoading()
-          console.error('删除账单失败:', error)
-          uni.showToast({
-            title: '网络错误，请检查网络连接',
-            icon: 'none'
-          })
+  showDeleteConfirm.value = true
+}
+
+// 关闭删除确认弹框
+const closeDeleteConfirm = () => {
+  showDeleteConfirm.value = false
+}
+
+// 执行删除操作
+const performDelete = async () => {
+  try {
+    closeDeleteConfirm() // 先关闭确认弹框
+    
+    uni.showLoading({
+      title: '删除中...'
+    })
+    
+    const response = await new Promise((resolve, reject) => {
+      uni.request({
+        url: `/api/bills/${billDetail.value.id}`,
+        method: 'DELETE',
+        success: (res) => {
+          resolve(res)
+        },
+        fail: (err) => {
+          reject(err)
         }
+      })
+    })
+    
+    uni.hideLoading()
+    
+    if (response.statusCode === 200 && response.data.code === 200) {
+      uni.showToast({
+        title: '删除成功',
+        icon: 'success'
+      })
+      closeDetailModal()
+      queryBills() // 重新查询账单列表
+    } else {
+      uni.showToast({
+        title: response.data?.message || '删除失败',
+        icon: 'none'
+      })
+    }
+  } catch (error) {
+    uni.hideLoading()
+    console.error('删除账单失败:', error)
+    uni.showToast({
+      title: '网络错误，请检查网络连接',
+      icon: 'none'
+    })
+  }
+}
+
+// 根据收支类型过滤标签
+const filteredTags = computed(() => {
+  return tagList.value.filter(tag => tag.inoutType === billForm.value.inoutType)
+})
+
+// 根据收支类型过滤标签（详情页）
+const filteredTagsForDetail = computed(() => {
+  return tagList.value.filter(tag => tag.inoutType === billDetail.value.inoutType)
+})
+
+// 根据标签类型分组的标签列表（用于表单）
+const groupedTagsForForm = computed(() => {
+  // 按tagType分组
+  const groups = {}
+  filteredTags.value.forEach(tag => {
+    if (!groups[tag.tagType]) {
+      groups[tag.tagType] = {
+        tagType: tag.tagType,
+        items: []
       }
     }
+    groups[tag.tagType].items.push(tag)
   })
-}
+  
+  // 转换为数组并排序
+  return Object.values(groups).sort((a, b) => a.tagType - b.tagType)
+})
+
+// 根据标签类型分组的标签列表（用于详情）
+const groupedTagsForDetail = computed(() => {
+  // 按tagType分组
+  const groups = {}
+  filteredTagsForDetail.value.forEach(tag => {
+    if (!groups[tag.tagType]) {
+      groups[tag.tagType] = {
+        tagType: tag.tagType,
+        items: []
+      }
+    }
+    groups[tag.tagType].items.push(tag)
+  })
+  
+  // 转换为数组并排序
+  return Object.values(groups).sort((a, b) => a.tagType - b.tagType)
+})
 </script>
 
 <style lang="scss">
@@ -1292,8 +1416,34 @@ const deleteBill = () => {
     margin: 20rpx;
     position: relative;
     
+    .type-tabs {
+      display: flex;
+      margin-bottom: 20rpx;
+      background-color: #f5f5f5;
+      border-radius: 12rpx;
+      padding: 4rpx;
+      
+      .tab-item {
+        flex: 1;
+        height: 70rpx;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 28rpx;
+        color: #666;
+        border-radius: 8rpx;
+        transition: all 0.3s ease;
+        
+        &.active {
+          background-color: #fff;
+          color: #4CAF50;
+          box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.1);
+        }
+      }
+    }
+    
     .tag-scroll {
-      max-height: 240rpx; /* 限制最多显示三行 */
+      max-height: 320rpx; /* 增加高度，能展示完整2行的标签 */
       overflow-y: auto;
       
       &::-webkit-scrollbar {
@@ -1328,56 +1478,94 @@ const deleteBill = () => {
     }
     
     .tag-item {
-      padding: 8rpx 20rpx;
-      border-radius: 30rpx;
-      font-size: 24rpx;
-      background-color: #f5f5f5;
-      color: #666;
+      width: 22%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 10rpx 0;
+      border-radius: 8rpx;
       transition: all 0.3s ease;
       
       &.active {
-        color: #fff;
-        box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.1);
+        background-color: #f5f5f5;
       }
       
-      &.tag-type-1 {
-        &.active {
-          background-color: #EE6666;
+      .tag-icon {
+        width: 60rpx;
+        height: 60rpx;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-bottom: 8rpx;
+        
+        &.tag-type-1 {
+          background-color: #EE6666; // 支出
+          
+          &.tag-style-1 {
+            background: linear-gradient(135deg, #FF9800, #EE6666); // 支付方式
+          }
+          
+          &.tag-style-2 {
+            background: linear-gradient(135deg, #EE6666, #9C27B0); // 账单类型
+          }
+          
+          &.tag-style-3 {
+            background: linear-gradient(135deg, #EE6666, #3F51B5); // 归属人
+          }
         }
         
-        &.tag-style-1.active {
-          background: linear-gradient(135deg, #FF9800, #EE6666);
+        &.tag-type-2 {
+          background-color: #91CC75; // 收入
+          
+          &.tag-style-1 {
+            background: linear-gradient(135deg, #4CAF50, #91CC75); // 支付方式
+          }
+          
+          &.tag-style-2 {
+            background: linear-gradient(135deg, #91CC75, #2196F3); // 账单类型
+          }
+          
+          &.tag-style-3 {
+            background: linear-gradient(135deg, #91CC75, #00BCD4); // 归属人
+          }
         }
         
-        &.tag-style-2.active {
-          background: linear-gradient(135deg, #EE6666, #9C27B0);
+        &.tag-type-3 {
+          background-color: #73C0DE; // 不计入收支
+          
+          &.tag-style-1 {
+            background: linear-gradient(135deg, #00BCD4, #73C0DE); // 支付方式
+          }
+          
+          &.tag-style-2 {
+            background: linear-gradient(135deg, #73C0DE, #3F51B5); // 账单类型
+          }
         }
         
-        &.tag-style-3.active {
-          background: linear-gradient(135deg, #EE6666, #3F51B5);
+        &.all-icon {
+          background-color: #4CAF50;
+          
+          &.active {
+            background: linear-gradient(135deg, #4CAF50, #8BC34A);
+          }
+        }
+        
+        .icon-text {
+          color: #fff;
+          font-size: 24rpx;
+          font-weight: bold;
         }
       }
       
-      &.tag-type-2 {
-        &.active {
-          background-color: #91CC75;
-        }
-        
-        &.tag-style-1.active {
-          background: linear-gradient(135deg, #4CAF50, #91CC75);
-        }
-        
-        &.tag-style-2.active {
-          background: linear-gradient(135deg, #91CC75, #2196F3);
-        }
-        
-        &.tag-style-3.active {
-          background: linear-gradient(135deg, #91CC75, #00BCD4);
-        }
-      }
-      
-      &.all-tag.active {
-        background-color: #4CAF50;
+      .tag-name {
+        font-size: 22rpx;
+        color: #333;
+        max-width: 100%;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        text-align: center;
       }
     }
     
@@ -1767,30 +1955,116 @@ const deleteBill = () => {
         }
         
         .tag-selector {
-          display: flex;
-          flex-wrap: wrap;
+          max-height: 400rpx;
+          overflow-y: auto;
+          
+          &::-webkit-scrollbar {
+            width: 4rpx;
+          }
+          
+          &::-webkit-scrollbar-thumb {
+            background-color: #ddd;
+            border-radius: 2rpx;
+          }
+          
+          .tag-group {
+            margin-bottom: 20rpx;
+            
+            &:last-child {
+              margin-bottom: 0;
+            }
+            
+            .group-title {
+              font-size: 24rpx;
+              color: #666;
+              margin-bottom: 10rpx;
+              padding-left: 10rpx;
+            }
+          }
+          
+          .tag-grid {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 16rpx;
+          }
           
           .tag-select-item {
-            padding: 12rpx 24rpx;
-            background-color: #f5f5f5;
-            border-radius: 30rpx;
-            margin-right: 16rpx;
-            margin-bottom: 16rpx;
-            font-size: 24rpx;
-            color: #666;
+            width: 22%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 10rpx 0;
+            border-radius: 8rpx;
+            transition: all 0.3s ease;
             
             &.active {
-              background-color: #4CAF50;
-              color: #fff;
+              background-color: #f5f5f5;
+            }
+            
+            .tag-icon {
+              width: 60rpx;
+              height: 60rpx;
+              border-radius: 50%;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              margin-bottom: 8rpx;
+              
+              &.tag-type-1 {
+                background-color: #EE6666; // 支出
+                
+                &.tag-style-1 {
+                  background: linear-gradient(135deg, #FF9800, #EE6666); // 支付方式
+                }
+                
+                &.tag-style-2 {
+                  background: linear-gradient(135deg, #EE6666, #9C27B0); // 账单类型
+                }
+                
+                &.tag-style-3 {
+                  background: linear-gradient(135deg, #EE6666, #3F51B5); // 归属人
+                }
+              }
+              
+              &.tag-type-2 {
+                background-color: #91CC75; // 收入
+                
+                &.tag-style-1 {
+                  background: linear-gradient(135deg, #4CAF50, #91CC75); // 支付方式
+                }
+                
+                &.tag-style-2 {
+                  background: linear-gradient(135deg, #91CC75, #2196F3); // 账单类型
+                }
+                
+                &.tag-style-3 {
+                  background: linear-gradient(135deg, #91CC75, #00BCD4); // 归属人
+                }
+              }
+              
+              .icon-text {
+                color: #fff;
+                font-size: 24rpx;
+                font-weight: bold;
+              }
+            }
+            
+            .tag-name {
+              font-size: 22rpx;
+              color: #333;
+              max-width: 100%;
+              overflow: hidden;
+              text-overflow: ellipsis;
+              white-space: nowrap;
+              text-align: center;
             }
           }
           
           .empty-tags {
-            width: 100%;
             padding: 30rpx 0;
             text-align: center;
             color: #999;
-            font-size: 28rpx;
+            font-size: 26rpx;
           }
         }
         
@@ -1945,6 +2219,78 @@ const deleteBill = () => {
   
   &:active {
     background-color: #f9f9f9;
+  }
+}
+
+.custom-confirm-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 2000; /* 确保比其他弹窗层级高 */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  
+  .confirm-mask {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.5);
+  }
+  
+  .confirm-content {
+    position: relative;
+    width: 600rpx;
+    background-color: #fff;
+    border-radius: 20rpx;
+    overflow: hidden;
+    z-index: 2001;
+    animation: modalFadeIn 0.3s ease;
+    
+    .confirm-title {
+      padding: 30rpx;
+      text-align: center;
+      font-size: 32rpx;
+      font-weight: 500;
+      border-bottom: 1px solid #eee;
+    }
+    
+    .confirm-message {
+      padding: 40rpx 30rpx;
+      text-align: center;
+      font-size: 28rpx;
+      color: #666;
+    }
+    
+    .confirm-buttons {
+      display: flex;
+      border-top: 1px solid #eee;
+      
+      button {
+        flex: 1;
+        height: 100rpx;
+        font-size: 32rpx;
+        background: none;
+        border: none;
+        
+        &.cancel-btn {
+          color: #666;
+          border-right: 1px solid #eee;
+        }
+        
+        &.delete-btn {
+          color: #EE6666;
+        }
+        
+        &:active {
+          background-color: #f5f5f5;
+        }
+      }
+    }
   }
 }
 </style>
