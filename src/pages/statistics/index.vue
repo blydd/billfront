@@ -4,13 +4,13 @@
     <view class="header">
       <view class="month-picker">
         <view class="month-switcher">
-          <view class="arrow" @click="switchMonth(-1)">
+          <view class="arrow left-arrow" @click="switchMonth(-1)">
             <text class="icon-text">&lt;</text>
           </view>
           <picker mode="date" fields="month" :value="currentDate" @change="handleDateChange">
-            <view class="picker-text">{{formatDate(currentDate)}} ></view>
+            <view class="picker-text">{{formatDate(currentDate)}}</view>
           </picker>
-          <view class="arrow" @click="switchMonth(1)">
+          <view class="arrow right-arrow" @click="switchMonth(1)">
             <text class="icon-text">&gt;</text>
           </view>
         </view>
@@ -344,7 +344,7 @@ const navigateTo = (url) => {
   color: #fff;
   
   .month-picker {
-    margin-bottom: 20rpx;
+    padding: 30rpx 0;
     
     .month-switcher {
       display: flex;
@@ -352,28 +352,28 @@ const navigateTo = (url) => {
       justify-content: center;
       
       .arrow {
-        width: 64rpx;
-        height: 64rpx;
+        width: 60rpx;
+        height: 60rpx;
         display: flex;
         align-items: center;
         justify-content: center;
-        background-color: rgba(255, 255, 255, 0.15);
+        background-color: rgba(255, 255, 255, 0.2);
         border-radius: 50%;
-        margin: 0 30rpx;
-        transition: all 0.3s ease;
         
-        &:active {
-          background-color: rgba(255, 255, 255, 0.25);
-          transform: scale(0.95);
+        .icon-text {
+          color: #fff;
+          font-size: 24rpx;
         }
       }
       
       .picker-text {
-        font-size: 36rpx;
-        min-width: 200rpx;
-        text-align: center;
+        padding: 0 30rpx;
+        font-size: 32rpx;
+        color: #fff;
         font-weight: 500;
-        letter-spacing: 1rpx;
+        &::after {
+          content: none;
+        }
       }
     }
   }
