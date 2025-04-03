@@ -40,28 +40,35 @@
         </view>
       </view>
       
-      <!-- 账户类型筛选 -->
-      <view class="account-type-filter">
-        <view 
-          class="account-type-btn" 
-          :class="{ active: selectedAccountType === '' }"
-          @click="handleAccountTypeSelect('')"
-        >
-          全部
+      <!-- 账户类型筛选和记账按钮 -->
+      <view class="filter-row">
+        <view class="account-type-filter">
+          <view 
+            class="account-type-btn" 
+            :class="{ active: selectedAccountType === '' }"
+            @click="handleAccountTypeSelect('')"
+          >
+            全部
+          </view>
+          <view 
+            class="account-type-btn" 
+            :class="{ active: selectedAccountType === '储蓄账户' }"
+            @click="handleAccountTypeSelect('储蓄账户')"
+          >
+            储蓄账户
+          </view>
+          <view 
+            class="account-type-btn" 
+            :class="{ active: selectedAccountType === '信用账户' }"
+            @click="handleAccountTypeSelect('信用账户')"
+          >
+            信用账户
+          </view>
         </view>
-        <view 
-          class="account-type-btn" 
-          :class="{ active: selectedAccountType === '储蓄账户' }"
-          @click="handleAccountTypeSelect('储蓄账户')"
-        >
-          储蓄账户
-        </view>
-        <view 
-          class="account-type-btn" 
-          :class="{ active: selectedAccountType === '信用账户' }"
-          @click="handleAccountTypeSelect('信用账户')"
-        >
-          信用账户
+        
+        <view class="add-bill-btn" @click="showAddBillModal">
+          <text class="btn-icon">+</text>
+          <text class="btn-text">记账</text>
         </view>
       </view>
       
@@ -102,7 +109,7 @@
                 </view>
                 <view class="info">
                   <view class="title-row">
-                    <text class="title">{{item.desc || '未命名账单'}}</text>
+                    <text class="title">{{item.remark || '未命名账单'}}</text>
                     <text class="time">{{formatTime(item.billDate)}}</text>
                   </view>
                   <view class="tags">
@@ -140,6 +147,129 @@
         <text>设置</text>
       </view>
     </view>
+
+    <!-- 添加账单弹框 -->
+    <view v-if="showModal" class="modal-wrapper">
+      <view class="modal-mask" @click="closeModal"></view>
+      <view class="bill-modal" @click.stop>
+        <view class="modal-header">
+          <text class="title">新增账单</text>
+          <view class="close-btn" @click="closeModal">
+            <text class="close-icon">×</text>
+          </view>
+        </view>
+        
+        <view class="modal-content">
+          <view class="form-item">
+            <text class="label">金额</text>
+            <input type="digit" v-model="billForm.amount" placeholder="请输入金额" />
+          </view>
+          
+          <view class="form-item">
+            <text class="label">描述</text>
+            <input type="text" v-model="billForm.remark" placeholder="请输入账单描述" />
+          </view>
+          
+          <view class="form-item">
+            <text class="label">收支类型</text>
+            <view class="type-selector">
+              <view 
+                class="type-item" 
+                :class="{ active: billForm.inoutType === 1 }"
+                @click="billForm.inoutType = 1"
+              >
+                支出
+              </view>
+              <view 
+                class="type-item" 
+                :class="{ active: billForm.inoutType === 2 }"
+                @click="billForm.inoutType = 2"
+              >
+                收入
+              </view>
+              <view 
+                class="type-item" 
+                :class="{ active: billForm.inoutType === 3 }"
+                @click="billForm.inoutType = 3"
+              >
+                不计入收支
+              </view>
+            </view>
+          </view>
+          
+          <view class="form-item">
+            <text class="label">标签</text>
+            <view class="tag-selector">
+              <view 
+                v-for="(tag, index) in filteredTags" 
+                :key="index"
+                :class="['tag-select-item', billForm.tags.includes(tag.id) ? 'active' : '']"
+                @click="toggleTag(tag.id)"
+              >
+                {{tag.name}}
+              </view>
+              <view v-if="filteredTags.length === 0" class="empty-tags">
+                暂无匹配的标签，请先在设置中添加标签
+              </view>
+            </view>
+          </view>
+          
+          <view class="form-item">
+            <text class="label">日期</text>
+            <view class="date-picker" @click="showDatePicker">
+              {{billForm.billDate}}
+            </view>
+          </view>
+        </view>
+        
+        <view class="modal-footer">
+          <button class="cancel-btn" @click="closeModal">取消</button>
+          <button class="confirm-btn" @click="saveBill">保存</button>
+        </view>
+      </view>
+    </view>
+
+    <!-- 日期选择器弹框 -->
+    <view v-if="showDatePickerModal" class="date-picker-modal">
+      <view class="date-picker-mask" @click="closeDatePicker"></view>
+      <view class="date-picker-content">
+        <view class="date-picker-header">
+          <text>选择日期和时间</text>
+        </view>
+        <view class="date-picker-body">
+          <picker-view 
+            :value="datePickerValue" 
+            @change="onDatePickerChange"
+            class="picker-view"
+            indicator-style="height: 80rpx;"
+            :mask-style="maskStyle"
+          >
+            <picker-view-column>
+              <view class="picker-item" v-for="(year, index) in years" :key="index">{{year}}年</view>
+            </picker-view-column>
+            <picker-view-column>
+              <view class="picker-item" v-for="(month, index) in months" :key="index">{{month}}月</view>
+            </picker-view-column>
+            <picker-view-column>
+              <view class="picker-item" v-for="(day, index) in days" :key="index">{{day}}日</view>
+            </picker-view-column>
+            <picker-view-column>
+              <view class="picker-item" v-for="(hour, index) in hours" :key="index">{{hour}}时</view>
+            </picker-view-column>
+            <picker-view-column>
+              <view class="picker-item" v-for="(minute, index) in minutes" :key="index">{{minute}}分</view>
+            </picker-view-column>
+            <picker-view-column>
+              <view class="picker-item" v-for="(second, index) in seconds" :key="index">{{second}}秒</view>
+            </picker-view-column>
+          </picker-view>
+        </view>
+        <view class="date-picker-footer">
+          <button class="cancel-btn" @click="closeDatePicker">取消</button>
+          <button class="confirm-btn" @click="confirmDatePicker">确定</button>
+        </view>
+      </view>
+    </view>
   </view>
 </template>
 
@@ -164,6 +294,36 @@ const selectedAccountType = ref('')
 // 总支出和总入账金额
 const totalExpense = ref('0.00')
 const totalIncome = ref('0.00')
+
+// 弹框显示状态
+const showModal = ref(false)
+const showDatePickerModal = ref(false)
+
+// 账单表单数据
+const billForm = ref({
+  amount: '',
+  remark: '',
+  inoutType: 1, // 1: 支出, 2: 收入, 3: 不计入收支
+  tags: [],
+  billDate: formatCurrentDate()
+})
+
+// 根据收支类型过滤标签
+const filteredTags = computed(() => {
+  return tagList.value.filter(tag => tag.inoutType === billForm.value.inoutType)
+})
+
+// 格式化当前日期为 YYYY-MM-DD
+function formatCurrentDate() {
+  const now = new Date()
+  const year = now.getFullYear()
+  const month = (now.getMonth() + 1).toString().padStart(2, '0')
+  const day = now.getDate().toString().padStart(2, '0')
+  const hour = now.getHours().toString().padStart(2, '0')
+  const minute = now.getMinutes().toString().padStart(2, '0')
+  const second = now.getSeconds().toString().padStart(2, '0')
+  return `${year}-${month}-${day} ${hour}:${minute}:${second}`
+}
 
 // 查询标签列表
 const queryTags = async () => {
@@ -456,10 +616,7 @@ const switchMonth = (offset) => {
 
 // 处理日期选择
 const handleDateChange = (e) => {
-  currentDate.value = e.detail.value
-  
-  // 日期变更后重新查询账单
-  queryBills()
+  billForm.value.billDate = e.detail.value
 }
 
 // 初始化函数
@@ -480,6 +637,249 @@ const navigateTo = (url) => {
   uni.navigateTo({
     url
   })
+}
+
+// 显示添加账单的弹框
+const showAddBillModal = () => {
+  // 重置表单
+  billForm.value = {
+    amount: '',
+    remark: '',
+    inoutType: 1,
+    tags: [],
+    billDate: formatCurrentDate()
+  }
+  showModal.value = true
+}
+
+// 关闭弹框
+const closeModal = () => {
+  showModal.value = false
+}
+
+// 切换标签选择
+const toggleTag = (tagId) => {
+  if (billForm.value.tags.includes(tagId)) {
+    billForm.value.tags = billForm.value.tags.filter(id => id !== tagId)
+  } else {
+    billForm.value.tags.push(tagId)
+  }
+}
+
+// 保存账单
+const saveBill = async () => {
+  // 表单验证
+  if (!billForm.value.amount) {
+    uni.showToast({
+      title: '请输入金额',
+      icon: 'none'
+    })
+    return
+  }
+  
+  if (!billForm.value.remark) {
+    uni.showToast({
+      title: '请输入描述',
+      icon: 'none'
+    })
+    return
+  }
+  
+  if (billForm.value.tags.length === 0) {
+    uni.showToast({
+      title: '请选择至少一个标签',
+      icon: 'none'
+    })
+    return
+  }
+  
+  try {
+    const response = await new Promise((resolve, reject) => {
+      uni.request({
+        url: '/api/bills',
+        method: 'POST',
+        data: {
+          amount: parseFloat(billForm.value.amount),
+          remark: billForm.value.remark,
+          inoutType: billForm.value.inoutType,
+          tagIds: billForm.value.tags,
+          billDate: billForm.value.billDate
+        },
+        success: (res) => {
+          resolve(res)
+        },
+        fail: (err) => {
+          reject(err)
+        }
+      })
+    })
+    
+    if (response.statusCode === 200 && response.data.code === 200) {
+      uni.showToast({
+        title: '添加成功',
+        icon: 'success'
+      })
+      closeModal()
+      queryBills() // 重新查询账单列表
+    } else {
+      uni.showToast({
+        title: response.data?.message || '添加失败',
+        icon: 'none'
+      })
+    }
+  } catch (error) {
+    console.error('添加账单失败:', error)
+    uni.showToast({
+      title: '添加失败，请稍后重试',
+      icon: 'none'
+    })
+  }
+}
+
+// 日期选择器数据
+const years = ref([])
+const months = ref([])
+const days = ref([])
+const hours = ref([])
+const minutes = ref([])
+const seconds = ref([])
+const datePickerValue = ref([0, 0, 0, 0, 0, 0])
+const tempDate = ref('')
+const maskStyle = 'background-image: linear-gradient(180deg, rgba(255, 255, 255, 0.95), rgba(255, 255, 255, 0.6)), linear-gradient(0deg, rgba(255, 255, 255, 0.95), rgba(255, 255, 255, 0.6));'
+
+// 初始化日期选择器数据
+const initDatePicker = () => {
+  const currentYear = new Date().getFullYear()
+  // 生成年份数据，从当前年份往前10年，往后10年
+  years.value = Array.from({length: 21}, (_, i) => currentYear - 10 + i)
+  // 生成月份数据
+  months.value = Array.from({length: 12}, (_, i) => i + 1)
+  // 生成天数数据，默认31天
+  updateDays(currentYear, 1)
+  // 生成小时数据
+  hours.value = Array.from({length: 24}, (_, i) => i)
+  // 生成分钟数据
+  minutes.value = Array.from({length: 60}, (_, i) => i)
+  // 生成秒数据
+  seconds.value = Array.from({length: 60}, (_, i) => i)
+  
+  // 获取当前系统时间
+  const now = new Date()
+  const currentMonth = now.getMonth() + 1
+  const currentDay = now.getDate()
+  const currentHour = now.getHours()
+  const currentMinute = now.getMinutes()
+  const currentSecond = now.getSeconds()
+  
+  // 设置当前日期和时间
+  if (billForm.value.billDate) {
+    // 如果表单中已有日期，则使用表单中的日期
+    let dateTime = billForm.value.billDate
+    // 如果日期字符串中没有时间部分，添加当前系统时间
+    if (dateTime.length <= 10) {
+      dateTime = `${dateTime} ${currentHour.toString().padStart(2, '0')}:${currentMinute.toString().padStart(2, '0')}:${currentSecond.toString().padStart(2, '0')}`
+    }
+    
+    const date = new Date(dateTime.replace(/-/g, '/'))
+    
+    const year = date.getFullYear()
+    const month = date.getMonth() + 1
+    const day = date.getDate()
+    const hour = date.getHours()
+    const minute = date.getMinutes()
+    const second = date.getSeconds()
+    
+    const yearIndex = years.value.findIndex(y => y === year)
+    const monthIndex = months.value.findIndex(m => m === month)
+    const dayIndex = days.value.findIndex(d => d === day)
+    const hourIndex = hours.value.findIndex(h => h === hour)
+    const minuteIndex = minutes.value.findIndex(m => m === minute)
+    const secondIndex = seconds.value.findIndex(s => s === second)
+    
+    datePickerValue.value = [
+      yearIndex !== -1 ? yearIndex : 0,
+      monthIndex !== -1 ? monthIndex : 0,
+      dayIndex !== -1 ? dayIndex : 0,
+      hourIndex !== -1 ? hourIndex : 0,
+      minuteIndex !== -1 ? minuteIndex : 0,
+      secondIndex !== -1 ? secondIndex : 0
+    ]
+    
+    tempDate.value = formatDateTime(year, month, day, hour, minute, second)
+  } else {
+    // 如果表单中没有日期，则使用当前系统时间
+    const yearIndex = years.value.findIndex(y => y === currentYear)
+    const monthIndex = months.value.findIndex(m => m === currentMonth)
+    const dayIndex = days.value.findIndex(d => d === currentDay)
+    const hourIndex = hours.value.findIndex(h => h === currentHour)
+    const minuteIndex = minutes.value.findIndex(m => m === currentMinute)
+    const secondIndex = seconds.value.findIndex(s => s === currentSecond)
+    
+    datePickerValue.value = [
+      yearIndex !== -1 ? yearIndex : 0,
+      monthIndex !== -1 ? monthIndex : 0,
+      dayIndex !== -1 ? dayIndex : 0,
+      hourIndex !== -1 ? hourIndex : 0,
+      minuteIndex !== -1 ? minuteIndex : 0,
+      secondIndex !== -1 ? secondIndex : 0
+    ]
+    
+    tempDate.value = formatDateTime(currentYear, currentMonth, currentDay, currentHour, currentMinute, currentSecond)
+    billForm.value.billDate = tempDate.value
+  }
+}
+
+// 格式化日期时间
+const formatDateTime = (year, month, day, hour, minute, second) => {
+  return `${year}-${month.toString().padStart(2, '0')}-${day.toString().padStart(2, '0')} ${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}:${second.toString().padStart(2, '0')}`
+}
+
+// 更新天数
+const updateDays = (year, month) => {
+  const daysInMonth = new Date(year, month, 0).getDate()
+  days.value = Array.from({length: daysInMonth}, (_, i) => i + 1)
+}
+
+// 日期选择器变更事件
+const onDatePickerChange = (e) => {
+  const values = e.detail.value
+  const year = years.value[values[0]]
+  const month = months.value[values[1]]
+  
+  // 更新天数
+  updateDays(year, month)
+  
+  // 如果选择的天数超出了当月的最大天数，则调整为当月的最后一天
+  if (values[2] >= days.value.length) {
+    values[2] = days.value.length - 1
+  }
+  
+  datePickerValue.value = values
+  
+  // 更新临时日期
+  const day = days.value[values[2]]
+  const hour = hours.value[values[3]]
+  const minute = minutes.value[values[4]]
+  const second = seconds.value[values[5]]
+  
+  tempDate.value = formatDateTime(year, month, day, hour, minute, second)
+}
+
+// 显示日期选择器
+const showDatePicker = () => {
+  initDatePicker()
+  showDatePickerModal.value = true
+}
+
+// 关闭日期选择器
+const closeDatePicker = () => {
+  showDatePickerModal.value = false
+}
+
+// 确认日期选择
+const confirmDatePicker = () => {
+  billForm.value.billDate = tempDate.value
+  closeDatePicker()
 }
 </script>
 
@@ -592,22 +992,52 @@ const navigateTo = (url) => {
     }
   }
   
-  .account-type-filter {
+  .filter-row {
     display: flex;
+    justify-content: space-between;
+    align-items: center;
     padding: 0 20rpx;
     margin-bottom: 20rpx;
     
-    .account-type-btn {
-      padding: 12rpx 24rpx;
-      margin-right: 16rpx;
-      background-color: rgba(255, 255, 255, 0.1);
-      color: rgba(255, 255, 255, 0.8);
-      border-radius: 30rpx;
-      font-size: 24rpx;
+    .account-type-filter {
+      display: flex;
       
-      &.active {
-        background-color: #fff;
-        color: #4CAF50;
+      .account-type-btn {
+        padding: 12rpx 24rpx;
+        margin-right: 16rpx;
+        background-color: rgba(255, 255, 255, 0.1);
+        color: rgba(255, 255, 255, 0.8);
+        border-radius: 30rpx;
+        font-size: 24rpx;
+        
+        &.active {
+          background-color: #fff;
+          color: #4CAF50;
+        }
+      }
+    }
+    
+    .add-bill-btn {
+      display: flex;
+      align-items: center;
+      padding: 12rpx 24rpx;
+      background: linear-gradient(135deg, #4CAF50, #2E7D32);
+      color: #fff;
+      border-radius: 30rpx;
+      box-shadow: 0 4rpx 12rpx rgba(76, 175, 80, 0.3);
+      
+      .btn-icon {
+        font-size: 28rpx;
+        font-weight: bold;
+        margin-right: 8rpx;
+      }
+      
+      .btn-text {
+        font-size: 24rpx;
+      }
+      
+      &:active {
+        transform: scale(0.98);
       }
     }
   }
@@ -824,6 +1254,272 @@ const navigateTo = (url) => {
     .tab-icon {
       font-size: 32rpx;
       margin-bottom: 4rpx;
+    }
+  }
+}
+
+.modal-wrapper {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  
+  .modal-mask {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.5);
+  }
+  
+  .bill-modal {
+    position: relative;
+    width: 650rpx;
+    background-color: #fff;
+    border-radius: 24rpx;
+    overflow: hidden;
+    animation: modalFadeIn 0.3s ease;
+    
+    .modal-header {
+      padding: 30rpx;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid #eee;
+      
+      .title {
+        font-size: 32rpx;
+        font-weight: 500;
+        color: #333;
+      }
+      
+      .close-btn {
+        width: 60rpx;
+        height: 60rpx;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        
+        .close-icon {
+          font-size: 40rpx;
+          color: #999;
+        }
+      }
+    }
+    
+    .modal-content {
+      padding: 30rpx;
+      
+      .form-item {
+        margin-bottom: 30rpx;
+        
+        &:last-child {
+          margin-bottom: 0;
+        }
+        
+        .label {
+          font-size: 28rpx;
+          color: #333;
+          margin-bottom: 16rpx;
+          display: block;
+        }
+        
+        input {
+          width: 100%;
+          height: 80rpx;
+          background-color: #f5f5f5;
+          border-radius: 12rpx;
+          padding: 0 24rpx;
+          font-size: 28rpx;
+          color: #333;
+        }
+        
+        .type-selector {
+          display: flex;
+          
+          .type-item {
+            flex: 1;
+            height: 80rpx;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background-color: #f5f5f5;
+            margin-right: 20rpx;
+            border-radius: 12rpx;
+            font-size: 28rpx;
+            color: #666;
+            
+            &:last-child {
+              margin-right: 0;
+            }
+            
+            &.active {
+              background-color: #4CAF50;
+              color: #fff;
+            }
+          }
+        }
+        
+        .tag-selector {
+          display: flex;
+          flex-wrap: wrap;
+          
+          .tag-select-item {
+            padding: 12rpx 24rpx;
+            background-color: #f5f5f5;
+            border-radius: 30rpx;
+            margin-right: 16rpx;
+            margin-bottom: 16rpx;
+            font-size: 24rpx;
+            color: #666;
+            
+            &.active {
+              background-color: #4CAF50;
+              color: #fff;
+            }
+          }
+          
+          .empty-tags {
+            width: 100%;
+            padding: 30rpx 0;
+            text-align: center;
+            color: #999;
+            font-size: 28rpx;
+          }
+        }
+        
+        .date-picker {
+          width: 100%;
+          height: 80rpx;
+          background-color: #f5f5f5;
+          border-radius: 12rpx;
+          padding: 0 24rpx;
+          font-size: 28rpx;
+          color: #333;
+          display: flex;
+          align-items: center;
+        }
+      }
+    }
+    
+    .modal-footer {
+      padding: 20rpx 30rpx;
+      display: flex;
+      justify-content: flex-end;
+      border-top: 1px solid #eee;
+      
+      button {
+        width: 160rpx;
+        height: 72rpx;
+        border-radius: 36rpx;
+        font-size: 28rpx;
+        margin-left: 20rpx;
+        
+        &.cancel-btn {
+          background-color: #f5f5f5;
+          color: #666;
+        }
+        
+        &.confirm-btn {
+          background-color: #4CAF50;
+          color: #fff;
+        }
+      }
+    }
+  }
+}
+
+@keyframes modalFadeIn {
+  from {
+    opacity: 0;
+    transform: scale(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.date-picker-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 1100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  
+  .date-picker-mask {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.5);
+  }
+  
+  .date-picker-content {
+    position: relative;
+    width: 700rpx;
+    background-color: #fff;
+    border-radius: 20rpx;
+    overflow: hidden;
+    
+    .date-picker-header {
+      padding: 30rpx;
+      text-align: center;
+      font-size: 32rpx;
+      border-bottom: 1px solid #eee;
+    }
+    
+    .date-picker-body {
+      height: 480rpx;
+      
+      .picker-view {
+        width: 100%;
+        height: 100%;
+      }
+      
+      .picker-item {
+        line-height: 80rpx;
+        text-align: center;
+        font-size: 28rpx;
+      }
+    }
+    
+    .date-picker-footer {
+      padding: 20rpx 30rpx;
+      display: flex;
+      justify-content: space-between;
+      border-top: 1px solid #eee;
+      
+      button {
+        width: 200rpx;
+        height: 80rpx;
+        border-radius: 40rpx;
+        font-size: 28rpx;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        
+        &.cancel-btn {
+          background-color: #f5f5f5;
+          color: #666;
+        }
+        
+        &.confirm-btn {
+          background-color: #4CAF50;
+          color: #fff;
+        }
+      }
     }
   }
 }
