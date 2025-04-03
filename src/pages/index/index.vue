@@ -4,13 +4,13 @@
     <view class="header">
       <view class="month-picker">
         <view class="month-switcher">
-          <view class="arrow" @click="switchMonth(-1)">
+          <view class="arrow left-arrow" @click="switchMonth(-1)">
             <text class="icon-text">&lt;</text>
           </view>
           <picker mode="date" fields="month" :value="currentDate" @change="handleDateChange">
-            <view class="picker-text">{{formatDate(currentDate)}} ></view>
+            <view class="picker-text">{{formatDate(currentDate)}}</view>
           </picker>
-          <view class="arrow" @click="switchMonth(1)">
+          <view class="arrow right-arrow" @click="switchMonth(1)">
             <text class="icon-text">&gt;</text>
           </view>
         </view>
@@ -484,7 +484,8 @@ const navigateTo = (url) => {
   color: #fff;
   
   .month-picker {
-    margin-bottom: 20rpx;
+    text-align: center;
+    padding: 20rpx 0;
     
     .month-switcher {
       display: flex;
@@ -501,20 +502,20 @@ const navigateTo = (url) => {
         border-radius: 50%;
         margin: 0 20rpx;
         
-        &:active {
-          background-color: rgba(255, 255, 255, 0.2);
+        .icon-text {
+          color: #fff;
+          font-size: 28rpx;
         }
         
-        .icon-text {
-          font-size: 24rpx;
-          font-weight: bold;
+        &:active {
+          background-color: rgba(255, 255, 255, 0.2);
         }
       }
       
       .picker-text {
-        font-size: 32rpx;
-        min-width: 180rpx;
-        text-align: center;
+        font-size: 36rpx;
+        color: #fff;
+        font-weight: bold;
       }
     }
   }
