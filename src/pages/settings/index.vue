@@ -3,7 +3,7 @@
     <view class="section">
       <view class="section-header">
         <text class="title">分类管理</text>
-        <text class="subtitle"> 点按以编辑或删除标签</text>
+        <text class="subtitle">点按以编辑或删除标签</text>
       </view>
       
       <!-- 分类类型切换 -->
@@ -27,7 +27,7 @@
               @touchstart="touchStart(item)"
               @touchend="touchEnd(item)"
               @touchmove="touchMove">
-          <view class="icon" :class="`tag-type-${item.inoutType}`">
+          <view class="icon" :class="[`tag-type-${item.inoutType}`, `tag-style-${item.tagType}`]">
             <text class="icon-text">{{item.name.substring(0, 1)}}</text>
           </view>
           <text class="name">{{item.name}}</text>
@@ -513,7 +513,7 @@ onMounted(() => {
     .subtitle {
       font-size: 24rpx;
       color: #999;
-      margin-top: 8rpx;
+      margin-left: 16rpx;
     }
   }
 }
@@ -566,14 +566,38 @@ onMounted(() => {
       
       &.tag-type-1 {
         background-color: #EE6666; // 支出
+        
+        &.tag-style-1 {
+          background: linear-gradient(135deg, #FF9800, #EE6666); // 支付方式
+        }
+        
+        &.tag-style-2 {
+          background: linear-gradient(135deg, #EE6666, #9C27B0); // 账单类型
+        }
       }
       
       &.tag-type-2 {
         background-color: #91CC75; // 收入
+        
+        &.tag-style-1 {
+          background: linear-gradient(135deg, #4CAF50, #91CC75); // 支付方式
+        }
+        
+        &.tag-style-2 {
+          background: linear-gradient(135deg, #91CC75, #2196F3); // 账单类型
+        }
       }
       
       &.tag-type-3 {
         background-color: #73C0DE; // 不计入收支
+        
+        &.tag-style-1 {
+          background: linear-gradient(135deg, #00BCD4, #73C0DE); // 支付方式
+        }
+        
+        &.tag-style-2 {
+          background: linear-gradient(135deg, #73C0DE, #3F51B5); // 账单类型
+        }
       }
       
       &.add-icon {
