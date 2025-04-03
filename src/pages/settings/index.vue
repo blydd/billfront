@@ -42,10 +42,12 @@
       <!-- 添加按钮 -->
       <view class="add-button-section">
         <view class="category-item add-item" @click="addTag">
-          <view class="icon add-icon">
-            <text class="icon-text">+</text>
+          <view class="add-button-wrapper">
+            <view class="icon add-icon">
+              <text class="icon-text">+</text>
+            </view>
+            <text class="name">添加</text>
           </view>
-          <text class="name">添加</text>
         </view>
       </view>
     </view>
@@ -717,6 +719,47 @@ const getTagTypeLabel = (tagType) => {
   
   .category-item {
     width: auto;
+    
+    .add-button-wrapper {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 10rpx 30rpx;
+      border-radius: 16rpx;
+      background-color: #f9f9f9;
+      box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.05);
+      transition: all 0.3s ease;
+      
+      &:active {
+        transform: scale(0.98);
+        background-color: #f5f5f5;
+      }
+      
+      .add-icon {
+        width: 60rpx;
+        height: 60rpx;
+        background: linear-gradient(135deg, #4CAF50, #8BC34A);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-bottom: 10rpx;
+        box-shadow: 0 2rpx 8rpx rgba(76, 175, 80, 0.3);
+        
+        .icon-text {
+          color: #fff;
+          font-size: 36rpx;
+          font-weight: bold;
+          line-height: 1;
+        }
+      }
+      
+      .name {
+        font-size: 28rpx;
+        color: #4CAF50;
+        font-weight: 500;
+      }
+    }
   }
 }
 
