@@ -5,38 +5,22 @@
       <view class="month-picker">
         <view class="month-switcher">
           <view class="arrow" @click="switchMonth(-1)">
-            <uni-icons type="left" size="20" color="#fff"></uni-icons>
+            <text class="icon-text">&lt;</text>
           </view>
           <picker mode="date" fields="month" :value="currentDate" @change="handleDateChange">
-            <view class="picker-text">{{formatDate(currentDate)}}</view>
+            <view class="picker-text">{{formatDate(currentDate)}} ></view>
           </picker>
           <view class="arrow" @click="switchMonth(1)">
-            <uni-icons type="right" size="20" color="#fff"></uni-icons>
+            <text class="icon-text">&gt;</text>
           </view>
         </view>
       </view>
       <view class="filter-section">
         <view class="filter-item">
-          <picker :range="billTypes" @change="handleBillTypeChange">
-            <view class="picker-content">
-              <text :class="['placeholder', selectedBillType ? 'selected' : '']">{{selectedBillType || '账单类型'}}</text>
-              <uni-icons type="bottom" size="14" color="#fff"></uni-icons>
-            </view>
-          </picker>
-        </view>
-        <view class="filter-item">
-          <view class="picker-content" @click="showTagSelector = true">
-            <text :class="['placeholder', selectedTags.length > 0 ? 'selected' : '']">
-              {{selectedTags.length > 0 ? (selectedTags.length > 1 ? `已选${selectedTags.length}个` : selectedTags[0].name) : '标签'}}
-            </text>
-            <uni-icons type="bottom" size="14" color="#fff"></uni-icons>
-          </view>
-        </view>
-        <view class="filter-item">
           <picker :range="accountTypes" @change="handleAccountTypeChange">
             <view class="picker-content">
               <text :class="['placeholder', selectedAccountType ? 'selected' : '']">{{selectedAccountType || '账户类型'}}</text>
-              <uni-icons type="bottom" size="14" color="#fff"></uni-icons>
+              <text class="icon-text">▼</text>
             </view>
           </picker>
         </view>
@@ -55,6 +39,11 @@
 
     <!-- 账单列表 -->
     <scroll-view scroll-y class="bill-list">
+      <!-- 调试信息 -->
+      <view class="debug-info" v-if="billList.length > 0 && Object.keys(billGroups).length === 0">
+        <text>接口返回了{{billList.length}}条数据，但未能正确分组</text>
+      </view>
+      
       <block v-for="(group, date) in billGroups" :key="date">
         <view class="date-group">
           <view class="date-header">
@@ -69,84 +58,74 @@
             <view class="bill-item" v-for="(item, index) in group.items" :key="index">
               <view class="left">
                 <view class="icon" :class="item.type">
-                  <iconfont :name="getIconName(item.tags[0]?.name)" size="24" color="#fff"></iconfont>
+                  <text class="icon-text">{{getFirstChar(item)}}</text>
                 </view>
                 <view class="info">
-                  <text class="time">{{item.time}}</text>
-                  <view class="tags-desc">
-                    <view class="tags">
-                      <text v-for="(tag, tagIndex) in item.tags" 
-                            :key="tagIndex" 
-                            class="tag"
-                            :style="{ backgroundColor: getTagColor(tagIndex) }">
-                        {{tag.name}}
-                      </text>
-                    </view>
-                    <text v-if="item.desc" class="desc">{{item.desc}}</text>
+                  <view class="title-row">
+                    <text class="title">{{item.desc || '未命名账单'}}</text>
+                    <text class="time">{{formatTime(item.billDate)}}</text>
+                  </view>
+                  <view class="tags">
+                    <text class="tag" v-for="(tag, tagIndex) in item.tags" :key="tagIndex">{{tag.name}}</text>
                   </view>
                 </view>
               </view>
-              <text class="amount" :class="{'income': item.amount > 0}">{{item.amount > 0 ? '+' : ''}}{{item.amount}}</text>
+              <view class="right">
+                <text class="amount" :class="item.inoutType === 1 ? 'expense' : 'income'">
+                  {{item.inoutType === 1 ? '-' : '+'}}{{item.amount}}
+                </text>
+              </view>
             </view>
           </view>
         </view>
       </block>
+      
+      <view class="empty-state" v-if="billList.length === 0">
+        <text class="empty-text">暂无账单数据</text>
+      </view>
     </scroll-view>
 
     <!-- 底部导航栏 -->
     <view class="tab-bar">
       <view class="tab-item active">
-        <uni-icons type="list" size="24" color="#4CAF50"></uni-icons>
+        <text class="tab-icon">📋</text>
         <text>明细</text>
       </view>
       <view class="tab-item" @click="navigateTo('/pages/statistics/index')">
-        <uni-icons type="chart" size="24" color="#666"></uni-icons>
+        <text class="tab-icon">📊</text>
         <text>统计</text>
       </view>
       <view class="tab-item" @click="navigateTo('/pages/settings/index')">
-        <uni-icons type="gear" size="24" color="#666"></uni-icons>
+        <text class="tab-icon">⚙️</text>
         <text>设置</text>
-      </view>
-    </view>
-
-    <!-- 标签选择弹窗 -->
-    <view class="tag-selector-mask" v-if="showTagSelector" @click="closeTagSelector">
-      <view class="tag-selector" @click.stop>
-        <view class="selector-header">
-          <text class="title">选择标签</text>
-          <text class="confirm" @click="confirmTagSelection">确定</text>
-        </view>
-        <view class="tag-list">
-          <view 
-            class="tag-item" 
-            v-for="(tag, index) in tagList" 
-            :key="tag.id"
-            @click="toggleTagSelection(tag)"
-            :class="{ 'selected': isTagSelected(tag) }"
-            :data-type="getTagType(tag.name)"
-          >
-            <text class="tag-name">{{tag.name}}</text>
-            <uni-icons v-if="isTagSelected(tag)" type="checkmarkempty" size="18" color="#fff"></uni-icons>
-          </view>
-        </view>
       </view>
     </view>
   </view>
 </template>
 
 <script setup>
-import { ref, computed, onMounted, watch } from 'vue'
-import iconfont from '@/components/iconfont/iconfont.vue'
+import { ref, computed, onMounted } from 'vue'
+import { onLoad } from '@dcloudio/uni-app'
 
 // 当前选择的日期
 const currentDate = ref(formatDefaultDate())
 
-// 总收支数据
+// 账单数据
+const billList = ref([])
+
+// 账户类型选项
+const accountTypes = ref(['全部', '储蓄账户', '信用账户'])
+const selectedAccountType = ref('')
+
+// 总支出和总入账金额
 const totalExpense = ref('0.00')
 const totalIncome = ref('0.00')
 
-// 账单数据
-const billList = ref([])
+// 处理账户类型选择
+const handleAccountTypeChange = (e) => {
+  selectedAccountType.value = accountTypes.value[e.detail.value]
+  queryBills() // 选择账户类型后重新查询
+}
 
 // 获取默认日期（当前月份）
 function formatDefaultDate() {
@@ -156,104 +135,28 @@ function formatDefaultDate() {
   return `${year}-${month}`
 }
 
-// 支付方式选项改为标签选项
-const tagList = ref([])
-const selectedTags = ref([])
+// 格式化日期显示
+const formatDate = (dateStr) => {
+  const [year, month] = dateStr.split('-')
+  return `${year}年${month}月`
+}
 
-// 获取标签列表
-const fetchTags = async () => {
-  // 如果标签列表已经加载，则直接返回
-  if (tagList.value.length > 0) {
-    return Promise.resolve()
+// 格式化时间显示
+const formatTime = (dateTimeStr) => {
+  if (!dateTimeStr) return ''
+  const parts = dateTimeStr.split(' ')
+  if (parts.length < 2) return ''
+  const time = parts[1]
+  if (!time) return ''
+  return time.substring(0, 5) // 只显示小时和分钟
+}
+
+// 获取账单的第一个字符作为图标
+const getFirstChar = (item) => {
+  if (item.tags && item.tags.length > 0 && item.tags[0].name) {
+    return item.tags[0].name.substring(0, 1)
   }
-  
-  try {
-    const response = await new Promise((resolve, reject) => {
-      uni.request({
-        url: '/api/tags',
-        method: 'GET',
-        success: (res) => {
-          resolve(res)
-        },
-        fail: (err) => {
-          reject(err)
-        }
-      })
-    })
-
-    if (response.statusCode === 200 && response.data.code === 200) {
-      // 添加"全部"选项
-      tagList.value = [{ id: -1, name: '全部' }, ...response.data.data]
-      return Promise.resolve()
-    } else {
-      uni.showToast({
-        title: response.data?.message || '获取标签失败',
-        icon: 'none'
-      })
-      return Promise.reject(new Error(response.data?.message || '获取标签失败'))
-    }
-  } catch (error) {
-    console.error('获取标签失败:', error)
-    uni.showToast({
-      title: '网络错误，请检查网络连接',
-      icon: 'none'
-    })
-    return Promise.reject(error)
-  }
-}
-
-// 标签选择相关
-const showTagSelector = ref(false)
-const tempSelectedTags = ref([])
-
-// 关闭标签选择器
-const closeTagSelector = () => {
-  showTagSelector.value = false
-}
-
-// 切换标签选择
-const toggleTagSelection = (tag) => {
-  // 如果选择的是"全部"
-  if (tag.id === -1) {
-    // 如果已经选择了"全部"，则取消选择
-    if (isAllSelected()) {
-      tempSelectedTags.value = []
-    } else {
-      // 否则只选择"全部"，取消其他所有标签的选择
-      tempSelectedTags.value = [tag]
-    }
-    return
-  }
-  
-  // 如果选择的是其他标签，则先取消"全部"的选择
-  tempSelectedTags.value = tempSelectedTags.value.filter(t => t.id !== -1)
-  
-  // 检查是否已经选择了该标签
-  const index = tempSelectedTags.value.findIndex(t => t.id === tag.id)
-  if (index > -1) {
-    // 已选择，则取消选择
-    tempSelectedTags.value.splice(index, 1)
-  } else {
-    // 未选择，则添加到选择列表
-    tempSelectedTags.value.push(tag)
-  }
-}
-
-// 确认标签选择
-const confirmTagSelection = () => {
-  selectedTags.value = [...tempSelectedTags.value]
-  showTagSelector.value = false
-  queryBills() // 选择标签后重新查询
-}
-
-// 检查标签是否被选中
-const isTagSelected = (tag) => {
-  return tempSelectedTags.value.some(t => t.id === tag.id)
-}
-
-// 检查是否选择了"全部"
-const isAllSelected = () => {
-  return tempSelectedTags.value.some(t => t.id === -1)
+  return item.inoutType === 1 ? '支' : '入'
 }
 
 // 查询账单数据
@@ -262,12 +165,8 @@ const queryBills = async () => {
     const params = {
       userId: 1, // 这里暂时写死，实际应该从用户登录信息中获取
       month: currentDate.value,
-      inoutType: selectedBillType.value === '支出' ? 1 : 
-                selectedBillType.value === '收入' ? 2 : 
-                selectedBillType.value === '不计入收支' ? 3 : undefined,
       accountType: selectedAccountType.value === '储蓄账户' ? 1 :
-                  selectedAccountType.value === '信用账户' ? 2 : undefined,
-      tagIds: selectedTags.value.length > 0 ? selectedTags.value.map(tag => tag.id) : undefined
+                  selectedAccountType.value === '信用账户' ? 2 : undefined
     }
 
     const response = await new Promise((resolve, reject) => {
@@ -288,8 +187,9 @@ const queryBills = async () => {
     })
 
     if (response.statusCode === 200 && response.data.code === 200) {
-      billList.value = response.data.data
-      processBillData()
+      console.log('接口返回数据:', response.data.data)
+      billList.value = response.data.data || []
+      calculateTotals()
     } else {
       uni.showToast({
         title: response.data?.message || '查询失败',
@@ -305,93 +205,149 @@ const queryBills = async () => {
   }
 }
 
-// 处理账单数据，计算总收支和分组
-const processBillData = () => {
+// 计算总收支
+const calculateTotals = () => {
   let expense = 0
   let income = 0
-  const groups = new Map()
-
+  
   billList.value.forEach(bill => {
-    const date = new Date(bill.billDate)
-    const dateStr = `${date.getMonth() + 1}月${date.getDate()}日 ${getDayText(date)}`
-    const timeStr = `${date.getHours().toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')}`
-
-    // 计算总收支
     if (bill.inoutType === 1) { // 支出
       expense += parseFloat(bill.amount)
     } else if (bill.inoutType === 2) { // 收入
       income += parseFloat(bill.amount)
     }
-
-    // 分组处理
-    if (!groups.has(dateStr)) {
-      groups.set(dateStr, {
-        date: dateStr,
-        expense: '0.00',
-        income: '0.00',
-        items: []
-      })
-    }
-
-    const group = groups.get(dateStr)
-    if (bill.inoutType === 1) {
-      group.expense = (parseFloat(group.expense) + parseFloat(bill.amount)).toFixed(2)
-    } else if (bill.inoutType === 2) {
-      group.income = (parseFloat(group.income) + parseFloat(bill.amount)).toFixed(2)
-    }
-
-    group.items.push({
-      type: bill.inoutType === 1 ? 'expense' : 'income',
-      icon: bill.tags[0]?.icon || 'shop',
-      time: timeStr,
-      amount: bill.inoutType === 1 ? -parseFloat(bill.amount) : parseFloat(bill.amount),
-      tags: bill.tags || [],
-      desc: bill.desc || ''
-    })
   })
-
-  // 更新总收支
+  
   totalExpense.value = expense.toFixed(2)
   totalIncome.value = income.toFixed(2)
-
-  // 更新账单分组
-  billGroups.value = Array.from(groups.values())
 }
 
-// 获取日期文本（今天/昨天/前天）
-const getDayText = (date) => {
-  const today = new Date()
-  const yesterday = new Date(today)
-  yesterday.setDate(yesterday.getDate() - 1)
-  const beforeYesterday = new Date(today)
-  beforeYesterday.setDate(beforeYesterday.getDate() - 2)
+// 按日期分组的账单数据
+const billGroups = computed(() => {
+  const groups = {}
+  
+  console.log('开始处理账单数据进行分组，数据条数:', billList.value.length)
+  
+  billList.value.forEach((bill, index) => {
+    console.log(`处理第${index+1}条账单:`, bill)
+    
+    // 使用 billDate 字段而不是 date 字段
+    const billDate = bill.billDate
+    
+    // 确保 billDate 存在且是字符串
+    if (!billDate || typeof billDate !== 'string') {
+      console.error('账单日期格式错误:', bill)
+      return
+    }
+    
+    // 提取日期部分，尝试多种可能的格式
+    let date = ''
+    
+    // 尝试方式1: 2023-05-01 12:00:00 格式
+    if (billDate.includes(' ')) {
+      date = billDate.split(' ')[0]
+    } 
+    // 尝试方式2: 2023-05-01 格式
+    else if (billDate.includes('-')) {
+      date = billDate
+    } 
+    // 尝试方式3: 时间戳格式
+    else if (!isNaN(Number(billDate))) {
+      const dateObj = new Date(Number(billDate))
+      date = `${dateObj.getFullYear()}-${String(dateObj.getMonth() + 1).padStart(2, '0')}-${String(dateObj.getDate()).padStart(2, '0')}`
+    }
+    // 其他情况
+    else {
+      console.error('无法解析的日期格式:', billDate)
+      date = '未知日期'
+    }
+    
+    console.log(`账单日期解析结果: ${billDate} -> ${date}`)
+    
+    if (!groups[date]) {
+      groups[date] = {
+        date: formatGroupDate(date),
+        expense: 0,
+        income: 0,
+        items: []
+      }
+    }
+    
+    // 确保金额是数字
+    const amount = typeof bill.amount === 'number' ? bill.amount : parseFloat(bill.amount || 0)
+    
+    if (bill.inoutType === 1) { // 支出
+      groups[date].expense += amount
+    } else if (bill.inoutType === 2) { // 收入
+      groups[date].income += amount
+    }
+    
+    // 确保 tags 是数组
+    if (!Array.isArray(bill.tags)) {
+      bill.tags = []
+    }
+    
+    groups[date].items.push({
+      ...bill,
+      type: bill.inoutType === 1 ? 'expense' : 'income'
+    })
+  })
+  
+  // 格式化金额
+  Object.values(groups).forEach(group => {
+    group.expense = group.expense.toFixed(2)
+    group.income = group.income.toFixed(2)
+  })
+  
+  console.log('分组结果:', groups)
+  
+  return groups
+})
 
-  if (date.toDateString() === today.toDateString()) {
-    return '今天'
-  } else if (date.toDateString() === yesterday.toDateString()) {
-    return '昨天'
-  } else if (date.toDateString() === beforeYesterday.toDateString()) {
-    return '前天'
-  } else {
-    return ''
+// 格式化分组日期显示
+const formatGroupDate = (dateStr) => {
+  if (!dateStr || dateStr === '未知日期') return '未知日期'
+  
+  try {
+    const date = new Date(dateStr)
+    if (isNaN(date.getTime())) {
+      console.error('无效的日期字符串:', dateStr)
+      return dateStr
+    }
+    
+    const today = new Date()
+    today.setHours(0, 0, 0, 0)
+    
+    const yesterday = new Date(today)
+    yesterday.setDate(yesterday.getDate() - 1)
+    
+    const billDate = new Date(date)
+    billDate.setHours(0, 0, 0, 0)
+    
+    // 获取月日格式
+    const month = date.getMonth() + 1
+    const day = date.getDate()
+    const monthDayStr = `${month}月${day}日`
+    
+    // 获取星期几
+    const weekday = ['周日', '周一', '周二', '周三', '周四', '周五', '周六'][date.getDay()]
+    
+    // 判断是否是今天
+    if (billDate.getTime() === today.getTime()) {
+      return `${monthDayStr} 今天`
+    }
+    
+    // 判断是否是昨天
+    if (billDate.getTime() === yesterday.getTime()) {
+      return `${monthDayStr} 昨天`
+    }
+    
+    // 其他日期显示月日周几
+    return `${monthDayStr} ${weekday}`
+  } catch (error) {
+    console.error('格式化日期出错:', error)
+    return dateStr
   }
-}
-
-// 账单分组数据
-const billGroups = ref([])
-
-// 账单类型选项
-const billTypes = ['全部', '支出', '收入', '不计入收支']
-const selectedBillType = ref('')
-
-// 账户类型选项
-const accountTypes = ['全部', '信用账户', '储蓄账户']
-const selectedAccountType = ref('')
-
-// 格式化日期显示
-const formatDate = (dateStr) => {
-  const [year, month] = dateStr.split('-')
-  return `${year}年${month}月`
 }
 
 // 切换月份
@@ -410,77 +366,13 @@ const switchMonth = (offset) => {
 const handleDateChange = (e) => {
   currentDate.value = e.detail.value
   
-  // 日期变更后重新查询账单，但不需要重新获取标签列表
+  // 日期变更后重新查询账单
   queryBills()
-}
-
-// 处理账单类型选择
-const handleBillTypeChange = (e) => {
-  selectedBillType.value = billTypes[e.detail.value]
-  queryBills() // 选择账单类型后重新查询
-}
-
-// 处理账户类型选择
-const handleAccountTypeChange = (e) => {
-  selectedAccountType.value = accountTypes[e.detail.value]
-  queryBills() // 选择账户类型后重新查询
-}
-
-// 获取标签颜色
-const getTagColor = (index) => {
-  const colors = [
-    '#4CAF50', // 绿色
-    '#2196F3', // 蓝色
-    '#FFC107', // 黄色
-    '#9C27B0', // 紫色
-    '#FF5722', // 橙色
-    '#00BCD4', // 青色
-    '#795548', // 棕色
-    '#607D8B'  // 灰色
-  ]
-  return colors[index % colors.length]
-}
-
-// 获取图标名称
-const getIconName = (tagName) => {
-  const iconMap = {
-    '餐饮': 'food',
-    '购物': 'shopping',
-    '交通': 'transport',
-    '娱乐': 'entertainment',
-    '医疗': 'medical',
-    '教育': 'education',
-    '住房': 'housing',
-    '其他': 'other',
-    '工资': 'salary',
-    '奖金': 'bonus',
-    '投资': 'investment',
-    '礼物': 'gift'
-  }
-  return iconMap[tagName] || 'other'
-}
-
-// 获取标签类型
-const getTagType = (tagName) => {
-  const expenseTags = ['餐饮', '购物', '交通', '娱乐', '医疗', '教育', '住房']
-  const incomeTags = ['工资', '奖金', '投资', '礼物']
-  
-  if (expenseTags.includes(tagName)) {
-    return 'expense'
-  } else if (incomeTags.includes(tagName)) {
-    return 'income'
-  } else {
-    return 'other'
-  }
 }
 
 // 页面加载时查询数据
 onMounted(() => {
-  // 先获取标签列表，确保标签列表已加载
-  fetchTags().then(() => {
-    // 标签列表加载完成后，再查询账单数据
-    queryBills()
-  })
+  queryBills()
 })
 
 // 页面跳转
@@ -502,7 +394,7 @@ const navigateTo = (url) => {
 
 .header {
   background-color: #4CAF50;
-  padding: 20rpx 30rpx;
+  padding: 20rpx 30rpx 30rpx;
   color: #fff;
   
   .month-picker {
@@ -514,58 +406,51 @@ const navigateTo = (url) => {
       justify-content: center;
       
       .arrow {
-        width: 64rpx;
-        height: 64rpx;
+        width: 60rpx;
+        height: 60rpx;
         display: flex;
         align-items: center;
         justify-content: center;
-        background-color: rgba(255, 255, 255, 0.15);
+        background-color: rgba(255, 255, 255, 0.1);
         border-radius: 50%;
-        margin: 0 30rpx;
-        transition: all 0.3s ease;
+        margin: 0 20rpx;
         
         &:active {
-          background-color: rgba(255, 255, 255, 0.25);
-          transform: scale(0.95);
+          background-color: rgba(255, 255, 255, 0.2);
+        }
+        
+        .icon-text {
+          font-size: 24rpx;
+          font-weight: bold;
         }
       }
       
       .picker-text {
-        font-size: 36rpx;
-        min-width: 200rpx;
+        font-size: 32rpx;
+        min-width: 180rpx;
         text-align: center;
-        font-weight: 500;
-        letter-spacing: 1rpx;
       }
     }
   }
-
+  
   .filter-section {
     display: flex;
     margin-bottom: 20rpx;
     
     .filter-item {
-      flex: 1;
-      margin-right: 12rpx;
-      
-      &:last-child {
-        margin-right: 0;
-      }
+      margin-right: 20rpx;
       
       .picker-content {
-        background-color: rgba(255, 255, 255, 0.1);
-        padding: 12rpx 16rpx;
-        border-radius: 8rpx;
         display: flex;
         align-items: center;
-        justify-content: space-between;
+        background-color: rgba(255, 255, 255, 0.1);
+        padding: 8rpx 16rpx;
+        border-radius: 8rpx;
         
         .placeholder {
           font-size: 24rpx;
           color: rgba(255, 255, 255, 0.8);
-          white-space: nowrap;
-          overflow: hidden;
-          text-overflow: ellipsis;
+          margin-right: 8rpx;
           max-width: 120rpx;
           
           &.selected {
@@ -573,9 +458,9 @@ const navigateTo = (url) => {
           }
         }
 
-        uni-icons {
+        .icon-text {
+          font-size: 16rpx;
           margin-left: 8rpx;
-          flex-shrink: 0;
         }
       }
     }
@@ -602,116 +487,166 @@ const navigateTo = (url) => {
 .bill-list {
   flex: 1;
   padding: 20rpx;
-  margin-bottom: 120rpx;
+  
+  .debug-info {
+    background-color: #fff3cd;
+    color: #856404;
+    padding: 20rpx;
+    margin-bottom: 20rpx;
+    border-radius: 8rpx;
+    font-size: 24rpx;
+  }
   
   .date-group {
     margin-bottom: 30rpx;
-    background-color: #fff;
-    border-radius: 12rpx;
-    overflow: hidden;
     
     .date-header {
-      padding: 20rpx;
       display: flex;
       justify-content: space-between;
-      border-bottom: 1px solid #f5f5f5;
+      align-items: center;
+      margin-bottom: 10rpx;
       
       .date {
         font-size: 28rpx;
-        color: #333;
+        color: #666;
       }
       
       .daily-total {
         font-size: 24rpx;
-        color: #666;
         
         .expense {
-          margin-right: 20rpx;
+          color: #f56c6c;
+          margin-right: 10rpx;
+        }
+        
+        .income {
+          color: #67c23a;
+        }
+      }
+    }
+    
+    .bill-items {
+      background-color: #fff;
+      border-radius: 12rpx;
+      overflow: hidden;
+      
+      .bill-item {
+        display: flex;
+        justify-content: space-between;
+        padding: 20rpx;
+        border-bottom: 1px solid #f5f5f5;
+        
+        &:last-child {
+          border-bottom: none;
+        }
+        
+        .left {
+          display: flex;
+          align-items: center;
+          flex: 1;
+          overflow: hidden;
+          
+          .icon {
+            width: 80rpx;
+            height: 80rpx;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 20rpx;
+            flex-shrink: 0;
+            
+            &.expense {
+              background-color: #f56c6c;
+            }
+            
+            &.income {
+              background-color: #67c23a;
+            }
+            
+            .icon-text {
+              color: #fff;
+              font-size: 28rpx;
+              font-weight: bold;
+            }
+          }
+          
+          .info {
+            flex: 1;
+            overflow: hidden;
+            
+            .title-row {
+              display: flex;
+              justify-content: space-between;
+              align-items: center;
+              margin-bottom: 8rpx;
+              
+              .title {
+                font-size: 28rpx;
+                color: #333;
+                flex: 1;
+                overflow: hidden;
+                text-overflow: ellipsis;
+                white-space: nowrap;
+              }
+              
+              .time {
+                font-size: 24rpx;
+                color: #999;
+                margin-left: 10rpx;
+              }
+            }
+            
+            .tags {
+              display: flex;
+              flex-wrap: wrap;
+              
+              .tag {
+                font-size: 22rpx;
+                color: #666;
+                background-color: #f5f5f5;
+                padding: 4rpx 12rpx;
+                border-radius: 6rpx;
+                margin-right: 10rpx;
+                margin-bottom: 6rpx;
+              }
+            }
+          }
+        }
+        
+        .right {
+          display: flex;
+          align-items: center;
+          margin-left: 20rpx;
+          
+          .amount {
+            font-size: 32rpx;
+            font-weight: bold;
+            
+            &.expense {
+              color: #f56c6c;
+            }
+            
+            &.income {
+              color: #67c23a;
+            }
+          }
         }
       }
     }
   }
   
-  .bill-items {
-    .bill-item {
-      padding: 20rpx;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      border-bottom: 1px solid #f5f5f5;
-      
-      .left {
-        display: flex;
-        align-items: center;
-        flex: 1;
-        
-        .icon {
-          width: 80rpx;
-          height: 80rpx;
-          border-radius: 50%;
-          background-color: #4CAF50;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          margin-right: 20rpx;
-          flex-shrink: 0;
-          
-          &.income {
-            background-color: #FF9800;
-          }
-        }
-        
-        .info {
-          flex: 1;
-          
-          .time {
-            font-size: 28rpx;
-            color: #333;
-            margin-bottom: 8rpx;
-            display: block;
-          }
-          
-          .tags-desc {
-            display: flex;
-            align-items: center;
-            gap: 12rpx;
-            
-            .tags {
-              display: flex;
-              flex-wrap: wrap;
-              gap: 8rpx;
-              
-              .tag {
-                font-size: 24rpx;
-                color: #fff;
-                padding: 4rpx 12rpx;
-                border-radius: 20rpx;
-                background-color: #4CAF50;
-              }
-            }
-            
-            .desc {
-              font-size: 24rpx;
-              color: #666;
-              flex: 1;
-              white-space: nowrap;
-              overflow: hidden;
-              text-overflow: ellipsis;
-            }
-          }
-        }
-      }
-      
-      .amount {
-        font-size: 32rpx;
-        color: #333;
-        margin-left: 20rpx;
-        flex-shrink: 0;
-        
-        &.income {
-          color: #FF9800;
-        }
-      }
+  .empty-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 100rpx 0;
+    
+    .empty-text {
+      font-size: 28rpx;
+      color: #999;
+      margin-top: 20rpx;
     }
   }
 }
@@ -739,208 +674,11 @@ const navigateTo = (url) => {
     &.active {
       color: #4CAF50;
     }
-  }
-}
-
-.tag-selector-mask {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background-color: rgba(0, 0, 0, 0.5);
-  z-index: 999;
-  display: flex;
-  align-items: flex-end;
-  animation: slideUp 0.3s ease-out;
-}
-
-.tag-selector {
-  background-color: #fff;
-  border-radius: 24rpx 24rpx 0 0;
-  padding: 30rpx;
-  width: 100%;
-  max-height: 80vh;
-  overflow-y: auto;
-  
-  .selector-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 30rpx;
-    padding-bottom: 20rpx;
-    border-bottom: 1px solid #f5f5f5;
     
-    .title {
+    .tab-icon {
       font-size: 32rpx;
-      font-weight: 600;
-      color: #333;
+      margin-bottom: 4rpx;
     }
-    
-    .confirm {
-      font-size: 28rpx;
-      color: #4CAF50;
-      padding: 12rpx 24rpx;
-      background-color: rgba(76, 175, 80, 0.1);
-      border-radius: 8rpx;
-      transition: all 0.3s ease;
-      
-      &:active {
-        background-color: rgba(76, 175, 80, 0.2);
-      }
-    }
-  }
-  
-  .tag-list {
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: center;
-    gap: 24rpx;
-    padding: 0 20rpx;
-    
-    .tag-item {
-      width: calc((100% - 48rpx) / 3);
-      height: 88rpx;
-      border-radius: 12rpx;
-      background-color: #f8f8f8;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      position: relative;
-      transition: all 0.3s ease;
-      overflow: hidden;
-      
-      &:active {
-        transform: scale(0.98);
-      }
-      
-      &.selected {
-        background-color: rgba(76, 175, 80, 0.1);
-        border: 2rpx solid #4CAF50;
-        
-        .tag-name {
-          color: #4CAF50;
-          font-weight: 500;
-        }
-        
-        &::after {
-          content: '';
-          position: absolute;
-          right: 16rpx;
-          width: 32rpx;
-          height: 32rpx;
-          background-color: #4CAF50;
-          border-radius: 50%;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-        }
-        
-        uni-icons {
-          opacity: 1;
-          color: #fff;
-        }
-      }
-      
-      .tag-name {
-        font-size: 28rpx;
-        color: #333;
-        transition: all 0.3s ease;
-        position: relative;
-        z-index: 1;
-        text-align: center;
-        padding: 0 40rpx;
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-      }
-      
-      uni-icons {
-        opacity: 0;
-        transition: all 0.3s ease;
-        position: absolute;
-        right: 16rpx;
-        z-index: 2;
-      }
-      
-      // 支出类标签样式
-      &[data-type="expense"] {
-        background-color: rgba(244, 67, 54, 0.1);
-        border: 1px solid rgba(244, 67, 54, 0.2);
-        
-        .tag-name {
-          color: #f44336;
-        }
-        
-        &.selected {
-          background-color: rgba(244, 67, 54, 0.15);
-          border-color: #f44336;
-          
-          .tag-name {
-            color: #f44336;
-          }
-          
-          &::after {
-            background-color: #f44336;
-          }
-        }
-      }
-      
-      // 收入类标签样式
-      &[data-type="income"] {
-        background-color: rgba(76, 175, 80, 0.1);
-        border: 1px solid rgba(76, 175, 80, 0.2);
-        
-        .tag-name {
-          color: #4CAF50;
-        }
-        
-        &.selected {
-          background-color: rgba(76, 175, 80, 0.15);
-          border-color: #4CAF50;
-          
-          .tag-name {
-            color: #4CAF50;
-          }
-          
-          &::after {
-            background-color: #4CAF50;
-          }
-        }
-      }
-      
-      // 其他类标签样式
-      &[data-type="other"] {
-        background-color: rgba(33, 150, 243, 0.1);
-        border: 1px solid rgba(33, 150, 243, 0.2);
-        
-        .tag-name {
-          color: #2196F3;
-        }
-        
-        &.selected {
-          background-color: rgba(33, 150, 243, 0.15);
-          border-color: #2196F3;
-          
-          .tag-name {
-            color: #2196F3;
-          }
-          
-          &::after {
-            background-color: #2196F3;
-          }
-        }
-      }
-    }
-  }
-}
-
-@keyframes slideUp {
-  from {
-    transform: translateY(100%);
-  }
-  to {
-    transform: translateY(0);
   }
 }
 </style>
