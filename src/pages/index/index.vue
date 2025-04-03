@@ -18,24 +18,30 @@
       
       <!-- 标签筛选 -->
       <view class="tag-filter">
-        <view class="tag-list">
-          <view 
-            :class="['tag-item', selectedTags.length === 0 ? 'active' : '']" 
-            @click="selectTag('all')"
-          >
-            全部
+        <scroll-view scroll-y class="tag-scroll">
+          <view class="tag-group" v-for="(group, index) in groupedTags" :key="index">
+            <view class="group-title">{{getTagTypeLabel(group.tagType)}}</view>
+            <view class="tag-list">
+              <view 
+                v-for="(tag, tagIndex) in group.items" 
+                :key="tagIndex" 
+                :class="[
+                  'tag-item', 
+                  `tag-type-${tag.inoutType}`, 
+                  `tag-style-${tag.tagType}`,
+                  selectedTags.includes(tag.id) ? 'active' : ''
+                ]"
+                @click="selectTag(tag.id)"
+              >
+                {{tag.name}}
+              </view>
+            </view>
           </view>
-          <view 
-            v-for="(tag, index) in tagList" 
-            :key="index" 
-            :class="[
-              'tag-item', 
-              `tag-type-${tag.inoutType}`, 
-              selectedTags.includes(tag.id) ? 'active' : ''
-            ]"
-            @click="selectTag(tag.id)"
-          >
-            {{tag.name}}
+        </scroll-view>
+        
+        <view class="all-tags-btn" @click="selectTag('all')">
+          <view :class="['tag-item', 'all-tag', selectedTags.length === 0 ? 'active' : '']">
+            全部
           </view>
         </view>
       </view>
@@ -413,6 +419,37 @@ const filteredTags = computed(() => {
 const filteredTagsForDetail = computed(() => {
   return tagList.value.filter(tag => tag.inoutType === billDetail.value.inoutType)
 })
+
+// 标签类型选项
+const tagTypeOptions = [
+  { value: 1, label: '支付方式' },
+  { value: 2, label: '账单类型' },
+  { value: 3, label: '归属人' }
+]
+
+// 根据标签类型分组的标签列表
+const groupedTags = computed(() => {
+  // 按tagType分组
+  const groups = {}
+  tagList.value.forEach(tag => {
+    if (!groups[tag.tagType]) {
+      groups[tag.tagType] = {
+        tagType: tag.tagType,
+        items: []
+      }
+    }
+    groups[tag.tagType].items.push(tag)
+  })
+  
+  // 转换为数组并排序
+  return Object.values(groups).sort((a, b) => a.tagType - b.tagType)
+})
+
+// 获取标签类型的显示名称
+const getTagTypeLabel = (tagType) => {
+  const option = tagTypeOptions.find(opt => opt.value === tagType)
+  return option ? option.label : '未知类型'
+}
 
 // 格式化当前日期为 YYYY-MM-DD
 function formatCurrentDate() {
@@ -1249,60 +1286,109 @@ const deleteBill = () => {
   }
   
   .tag-filter {
-    margin: 20rpx 0;
-    padding: 0 20rpx;
+    padding: 20rpx;
+    background-color: #fff;
+    border-radius: 16rpx;
+    margin: 20rpx;
+    position: relative;
+    
+    .tag-scroll {
+      max-height: 240rpx; /* 限制最多显示三行 */
+      overflow-y: auto;
+      
+      &::-webkit-scrollbar {
+        width: 4rpx;
+      }
+      
+      &::-webkit-scrollbar-thumb {
+        background-color: #ddd;
+        border-radius: 2rpx;
+      }
+    }
+    
+    .tag-group {
+      margin-bottom: 20rpx;
+      
+      &:last-child {
+        margin-bottom: 0;
+      }
+      
+      .group-title {
+        font-size: 24rpx;
+        color: #666;
+        margin-bottom: 10rpx;
+        padding-left: 10rpx;
+      }
+    }
     
     .tag-list {
       display: flex;
       flex-wrap: wrap;
+      gap: 16rpx;
+    }
+    
+    .tag-item {
+      padding: 8rpx 20rpx;
+      border-radius: 30rpx;
+      font-size: 24rpx;
+      background-color: #f5f5f5;
+      color: #666;
+      transition: all 0.3s ease;
       
-      .tag-item {
-        padding: 8rpx 20rpx;
-        margin-right: 16rpx;
-        margin-bottom: 16rpx;
-        background-color: rgba(255, 255, 255, 0.1);
-        color: rgba(255, 255, 255, 0.8);
-        border-radius: 30rpx;
-        font-size: 24rpx;
-        
+      &.active {
+        color: #fff;
+        box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.1);
+      }
+      
+      &.tag-type-1 {
         &.active {
-          background-color: #fff;
-          color: #4CAF50;
+          background-color: #EE6666;
         }
         
-        // 支出标签
-        &.tag-type-1 {
-          background-color: rgba(245, 108, 108, 0.2);
-          color: #f56c6c;
-          
-          &.active {
-            background-color: #f56c6c;
-            color: #fff;
-          }
+        &.tag-style-1.active {
+          background: linear-gradient(135deg, #FF9800, #EE6666);
         }
         
-        // 入账标签
-        &.tag-type-2 {
-          background-color: rgba(103, 194, 58, 0.2);
-          color: #67c23a;
-          
-          &.active {
-            background-color: #67c23a;
-            color: #fff;
-          }
+        &.tag-style-2.active {
+          background: linear-gradient(135deg, #EE6666, #9C27B0);
         }
         
-        // 不计入收支标签
-        &.tag-type-3 {
-          background-color: rgba(144, 147, 153, 0.2);
-          color: #909399;
-          
-          &.active {
-            background-color: #909399;
-            color: #fff;
-          }
+        &.tag-style-3.active {
+          background: linear-gradient(135deg, #EE6666, #3F51B5);
         }
       }
+      
+      &.tag-type-2 {
+        &.active {
+          background-color: #91CC75;
+        }
+        
+        &.tag-style-1.active {
+          background: linear-gradient(135deg, #4CAF50, #91CC75);
+        }
+        
+        &.tag-style-2.active {
+          background: linear-gradient(135deg, #91CC75, #2196F3);
+        }
+        
+        &.tag-style-3.active {
+          background: linear-gradient(135deg, #91CC75, #00BCD4);
+        }
+      }
+      
+      &.all-tag.active {
+        background-color: #4CAF50;
+      }
+    }
+    
+    .all-tags-btn {
+      position: sticky;
+      top: 0;
+      background-color: #fff;
+      padding-top: 10rpx;
+      z-index: 1;
+      display: flex;
+      justify-content: center;
     }
   }
   
