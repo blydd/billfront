@@ -15,6 +15,31 @@
           </view>
         </view>
       </view>
+      
+      <!-- 标签筛选 -->
+      <view class="tag-filter">
+        <view class="tag-list">
+          <view 
+            :class="['tag-item', selectedTags.length === 0 ? 'active' : '']" 
+            @click="selectTag('all')"
+          >
+            全部
+          </view>
+          <view 
+            v-for="(tag, index) in tagList" 
+            :key="index" 
+            :class="[
+              'tag-item', 
+              `tag-type-${tag.inoutType}`, 
+              selectedTags.includes(tag.id) ? 'active' : ''
+            ]"
+            @click="selectTag(tag.id)"
+          >
+            {{tag.name}}
+          </view>
+        </view>
+      </view>
+      
       <view class="filter-section">
         <view class="filter-item">
           <picker :range="accountTypes" @change="handleAccountTypeChange">
@@ -25,6 +50,7 @@
           </picker>
         </view>
       </view>
+      
       <view class="total-amount">
         <view class="amount-item">
           <text class="label">总支出¥</text>
@@ -113,6 +139,10 @@ const currentDate = ref(formatDefaultDate())
 // 账单数据
 const billList = ref([])
 
+// 标签列表
+const tagList = ref([])
+const selectedTags = ref([])
+
 // 账户类型选项
 const accountTypes = ref(['全部', '储蓄账户', '信用账户'])
 const selectedAccountType = ref('')
@@ -120,6 +150,51 @@ const selectedAccountType = ref('')
 // 总支出和总入账金额
 const totalExpense = ref('0.00')
 const totalIncome = ref('0.00')
+
+// 查询标签列表
+const queryTags = async () => {
+  try {
+    const response = await new Promise((resolve, reject) => {
+      uni.request({
+        url: '/api/tags',  // 正确的标签列表接口
+        method: 'GET',
+        success: (res) => {
+          resolve(res)
+        },
+        fail: (err) => {
+          reject(err)
+        }
+      })
+    })
+
+    if (response.statusCode === 200 && response.data.code === 200) {
+      console.log('获取到标签列表:', response.data.data)
+      tagList.value = response.data.data || []
+    } else {
+      console.error('查询标签失败:', response.data?.message)
+    }
+  } catch (error) {
+    console.error('查询标签失败:', error)
+  }
+}
+
+// 选择标签
+const selectTag = (tagId) => {
+  if (tagId === 'all') {
+    // 选择"全部"，清空已选标签
+    selectedTags.value = []
+  } else {
+    // 如果已经选中了这个标签，则取消选中
+    if (selectedTags.value.includes(tagId)) {
+      selectedTags.value = selectedTags.value.filter(id => id !== tagId)
+    } else {
+      // 否则添加到已选标签中
+      selectedTags.value.push(tagId)
+    }
+  }
+  
+  queryBills() // 选择标签后重新查询
+}
 
 // 处理账户类型选择
 const handleAccountTypeChange = (e) => {
@@ -166,8 +241,11 @@ const queryBills = async () => {
       userId: 1, // 这里暂时写死，实际应该从用户登录信息中获取
       month: currentDate.value,
       accountType: selectedAccountType.value === '储蓄账户' ? 1 :
-                  selectedAccountType.value === '信用账户' ? 2 : undefined
+                  selectedAccountType.value === '信用账户' ? 2 : undefined,
+      tagIds: selectedTags.value.length > 0 ? selectedTags.value : undefined
     }
+
+    console.log('查询账单参数:', params)
 
     const response = await new Promise((resolve, reject) => {
       uni.request({
@@ -370,9 +448,17 @@ const handleDateChange = (e) => {
   queryBills()
 }
 
-// 页面加载时查询数据
-onMounted(() => {
-  queryBills()
+// 初始化函数
+const init = async () => {
+  // 先查询标签列表
+  await queryTags()
+  // 再查询账单数据
+  await queryBills()
+}
+
+// 页面加载时初始化
+onLoad(() => {
+  init()
 })
 
 // 页面跳转
@@ -429,6 +515,64 @@ const navigateTo = (url) => {
         font-size: 32rpx;
         min-width: 180rpx;
         text-align: center;
+      }
+    }
+  }
+  
+  .tag-filter {
+    margin: 20rpx 0;
+    padding: 0 20rpx;
+    
+    .tag-list {
+      display: flex;
+      flex-wrap: wrap;
+      
+      .tag-item {
+        padding: 8rpx 20rpx;
+        margin-right: 16rpx;
+        margin-bottom: 16rpx;
+        background-color: rgba(255, 255, 255, 0.1);
+        color: rgba(255, 255, 255, 0.8);
+        border-radius: 30rpx;
+        font-size: 24rpx;
+        
+        &.active {
+          background-color: #fff;
+          color: #4CAF50;
+        }
+        
+        // 支出标签
+        &.tag-type-1 {
+          background-color: rgba(245, 108, 108, 0.2);
+          color: #f56c6c;
+          
+          &.active {
+            background-color: #f56c6c;
+            color: #fff;
+          }
+        }
+        
+        // 入账标签
+        &.tag-type-2 {
+          background-color: rgba(103, 194, 58, 0.2);
+          color: #67c23a;
+          
+          &.active {
+            background-color: #67c23a;
+            color: #fff;
+          }
+        }
+        
+        // 不计入收支标签
+        &.tag-type-3 {
+          background-color: rgba(144, 147, 153, 0.2);
+          color: #909399;
+          
+          &.active {
+            background-color: #909399;
+            color: #fff;
+          }
+        }
       }
     }
   }
