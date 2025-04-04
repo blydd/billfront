@@ -44,7 +44,7 @@ const request = (options) => {
       success: (res) => {
         // 检查token是否过期
         if (res.statusCode === 401 && !isAuthApi) {
-          // token过期，跳转到授权页面
+          // token过期，显示提示
           uni.showToast({
             title: '登录已过期，请重新登录',
             icon: 'none',
@@ -56,12 +56,8 @@ const request = (options) => {
           uni.removeStorageSync('userId')
           uni.removeStorageSync('token')
           
-          // 跳转到授权页面
-          setTimeout(() => {
-            uni.reLaunch({
-              url: '/pages/auth/index'
-            })
-          }, 1500)
+          // 触发授权状态更新
+          uni.$emit('updateAuthStatus', false)
           
           reject(res)
         } else {

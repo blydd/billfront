@@ -42,7 +42,7 @@
     "showES6CompileOption": false
   },
   "compileType": "miniprogram",
-  "libVersion": "2.19.4",
+  "libVersion": "3.0.2",
   "appid": "wxad964e84378db247",
   "projectname": "账单管理系统",
   "debugOptions": {

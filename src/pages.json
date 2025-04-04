@@ -17,17 +17,6 @@
 			"style": {
 				"navigationBarTitleText": "设置"
 			}
-		},
-		{
-			"path": "pages/auth/index",
-			"style": {
-				"navigationBarTitleText": "授权登录",
-				"navigationStyle": "custom",
-				"disableScroll": true,
-				"app-plus": {
-					"titleNView": false
-				}
-			}
 		}
 	],
 	"tabBar": {

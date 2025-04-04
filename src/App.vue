@@ -26,22 +26,10 @@ export default {
           
           if (needToken) {
             const token = uni.getStorageSync('token')
-            if (!token && !isRedirecting) {
-              isRedirecting = true
-              // 获取当前页面路径
-              const pages = getCurrentPages()
-              const currentPage = pages[pages.length - 1]
-              const currentPath = currentPage ? `/${currentPage.route}` : '/pages/index/index'
-              
-              // 如果当前不在授权页面，则跳转到授权页面
-              if (currentPath !== '/pages/auth/index') {
-                uni.navigateTo({
-                  url: '/pages/auth/index',
-                  complete: () => {
-                    isRedirecting = false
-                  }
-                })
-              }
+            if (!token) {
+              // 清除用户信息，触发首页的授权状态更新
+              uni.clearStorageSync()
+              uni.$emit('updateAuthStatus', false)
               return false
             }
             args.header = {
@@ -54,23 +42,10 @@ export default {
         success(args) {
           requestTasks.delete(args)
           // 处理401未授权的情况
-          if (args.statusCode === 401 && !isRedirecting) {
-            isRedirecting = true
+          if (args.statusCode === 401) {
+            // 清除用户信息，触发首页的授权状态更新
             uni.clearStorageSync()
-            // 获取当前页面路径
-            const pages = getCurrentPages()
-            const currentPage = pages[pages.length - 1]
-            const currentPath = currentPage ? `/${currentPage.route}` : '/pages/index/index'
-            
-            // 如果当前不在授权页面，则跳转到授权页面
-            if (currentPath !== '/pages/auth/index') {
-              uni.navigateTo({
-                url: '/pages/auth/index',
-                complete: () => {
-                  isRedirecting = false
-                }
-              })
-            }
+            uni.$emit('updateAuthStatus', false)
           }
         },
         fail(err) {
@@ -104,10 +79,8 @@ export default {
         return res
       } catch (error) {
         console.error('获取用户信息失败:', error)
-        // 如果用户拒绝授权，跳转到授权页面
-        uni.redirectTo({
-          url: '/pages/auth/index'
-        })
+        // 触发首页的授权状态更新
+        uni.$emit('updateAuthStatus', false)
         throw error
       }
     },
@@ -151,16 +124,7 @@ export default {
           
           // 触发登录成功事件，刷新页面数据
           uni.$emit('loginSuccess')
-          
-          // 登录成功后返回之前的页面
-          const pages = getCurrentPages()
-          if (pages.length > 1) {
-            uni.navigateBack()
-          } else {
-            uni.redirectTo({
-              url: '/pages/index/index'
-            })
-          }
+          uni.$emit('updateAuthStatus', true)
         } else {
           throw new Error(response.data?.message || '登录失败')
         }
