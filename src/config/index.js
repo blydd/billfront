@@ -1,5 +1,5 @@
 // API 基础地址
-export const BASE_URL = 'http://localhost:8080'
+export const BASE_URL = 'https://yqccrdqeszui.sealosbja.site'
 
 // API 接口地址
 export const API = {
