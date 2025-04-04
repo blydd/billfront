@@ -406,7 +406,7 @@
             <button class="cancel-btn" @click="closeDeleteConfirm">取消</button>
             <button class="delete-btn" @click="performDelete">删除</button>
           </view>
-        </view>
+    </view>
       </view>
     </template>
   </view>
@@ -1441,7 +1441,7 @@ watch(isAuthorized, (newVal) => {
     padding: 20rpx 0;
     
     .month-switcher {
-      display: flex;
+  display: flex;
   align-items: center;
   justify-content: center;
       
@@ -1466,7 +1466,7 @@ watch(isAuthorized, (newVal) => {
       }
       
       .picker-text {
-        font-size: 36rpx;
+  font-size: 36rpx;
         color: #fff;
         font-weight: bold;
       }

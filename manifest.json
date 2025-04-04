@@ -49,11 +49,25 @@
   },
   "quickapp": {},
   "mp-weixin": {
-    "appid": "",
+    "appid": "wxad964e84378db247",
     "setting": {
-      "urlCheck": false
+      "urlCheck": false,
+      "es6": true,
+      "postcss": true,
+      "minified": true,
+      "checkSiteMap": false,
+      "minifyWXSS": true,
+      "minifyWXML": true,
+      "ignoreUploadUnusedFiles": true
     },
-    "usingComponents": true
+    "usingComponents": true,
+    "miniprogramRoot": "./dist/build/mp-weixin/",
+    "libVersion": "3.0.2",
+    "permission": {
+      "scope.userInfo": {
+        "desc": "用于完善会员资料"
+      }
+    }
   },
   "vueVersion": "3"
 } 

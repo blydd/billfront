@@ -1,4 +1,4 @@
-<template>
+  <template>
   <view class="container">
     <!-- 顶部统计 -->
     <view class="header">
