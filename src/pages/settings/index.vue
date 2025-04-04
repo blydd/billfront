@@ -122,6 +122,7 @@
 <script setup>
 import { ref, computed, nextTick, onMounted } from 'vue'
 import Icon from '@/components/icon/icon.vue'
+import { API } from '@/config'
 
 // 当前选择的分类类型
 const activeType = ref('expense')
@@ -200,7 +201,7 @@ const fetchTags = async () => {
     
     const response = await new Promise((resolve, reject) => {
       uni.request({
-        url: 'http://localhost:8080/api/tags',
+        url: API.TAGS.LIST,
         method: 'GET',
         data: {
           userId: userId
@@ -276,7 +277,7 @@ const editTag = async (tag) => {
     
     const response = await new Promise((resolve, reject) => {
       uni.request({
-        url: `http://localhost:8080/api/tags/${tag.id}`,
+        url: API.TAGS.UPDATE(tag.id),
         method: 'GET',
         data: {
           userId: userId
@@ -402,7 +403,7 @@ const deleteTag = async (tag) => {
 
     const response = await new Promise((resolve, reject) => {
       uni.request({
-        url: `http://localhost:8080/api/tags/${tag.id}`,
+        url: API.TAGS.DELETE(tag.id),
         method: 'DELETE',
         data: {
           userId: userId
@@ -501,8 +502,8 @@ const saveTag = async () => {
     }
 
     const url = currentTag.value ? 
-      `http://localhost:8080/api/tags/${currentTag.value.id}` : 
-      'http://localhost:8080/api/tags'
+      API.TAGS.UPDATE(currentTag.value.id) : 
+      API.TAGS.CREATE
     const method = currentTag.value ? 'PUT' : 'POST'
     
     const response = await new Promise((resolve, reject) => {

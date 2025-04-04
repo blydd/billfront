@@ -90,6 +90,7 @@
 <script setup>
 import { ref, computed, onMounted, watch } from 'vue'
 import { onLoad, onShow } from '@dcloudio/uni-app'
+import { API } from '@/config'
 
 // 当前选择的日期
 const currentDate = ref(formatDefaultDate())
@@ -161,7 +162,7 @@ const queryBills = async () => {
 
     const response = await new Promise((resolve, reject) => {
       uni.request({
-        url: 'http://localhost:8080/api/bills/query',
+        url: API.BILLS.QUERY,
         method: 'POST',
         data: params,
         header: {

@@ -1,4 +1,6 @@
 <script>
+import { BASE_URL } from '@/config'
+
 export default {
   globalData: {
     isFirstLaunch: true
@@ -99,7 +101,7 @@ export default {
         // 调用后端登录接口
         const response = await new Promise((resolve, reject) => {
           uni.request({
-            url: 'http://localhost:8080/api/user/login',
+            url: `${BASE_URL}/api/user/login`,
             method: 'POST',
             data: {
               code: loginRes.code,

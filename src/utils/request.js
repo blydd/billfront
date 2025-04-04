@@ -23,15 +23,8 @@ const request = (options) => {
   // 处理请求URL
   let url = options.url;
   // 如果是相对路径，添加基础URL
-  if (url.startsWith('/api')) {
-    // #ifdef H5
-    // H5环境使用相对路径
-    // #endif
-    
-    // #ifdef MP-WEIXIN
-    // 小程序环境使用完整URL
+  if (!url.startsWith('http')) {
     url = 'https://yqccrdqeszui.sealosbja.site' + url;
-    // #endif
   }
   
   // 返回请求Promise
