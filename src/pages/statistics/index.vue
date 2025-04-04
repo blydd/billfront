@@ -159,18 +159,22 @@ const queryBills = async () => {
       tagType: selectedTagType.value === '账单类型' ? 2 : 1
     }
 
-    const [error, response] = await uni.request({
-      url: 'http://localhost:8080/api/bills/query',
-      method: 'POST',
-      data: params,
-      header: {
-        'content-type': 'application/json'
-      }
+    const response = await new Promise((resolve, reject) => {
+      uni.request({
+        url: 'http://localhost:8080/api/bills/query',
+        method: 'POST',
+        data: params,
+        header: {
+          'content-type': 'application/json'
+        },
+        success: (res) => {
+          resolve(res)
+        },
+        fail: (err) => {
+          reject(err)
+        }
+      })
     })
-
-    if (error) {
-      throw error
-    }
 
     if (response.statusCode === 200 && response.data.code === 200) {
       billList.value = response.data.data || []
