@@ -88,7 +88,7 @@ const saveUserInfo = async (userInfo) => {
       // 发送登录请求到后端
       const response = await new Promise((resolve, reject) => {
         uni.request({
-          url: 'https://your-api-domain.com/api/user/login',
+          url: '/api/user/login',
           method: 'POST',
           data: {
             code: loginRes.code,

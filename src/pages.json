@@ -3,15 +3,13 @@
 		{
 			"path": "pages/auth/index",
 			"style": {
-				"navigationBarTitleText": "授权登录",
-				"navigationStyle": "custom"
+				"navigationBarTitleText": "授权登录"
 			}
 		},
 		{
 			"path": "pages/index/index",
 			"style": {
-				"navigationBarTitleText": "账单明细",
-				"navigationStyle": "custom"
+				"navigationBarTitleText": "账单明细"
 			}
 		},
 		{
@@ -55,7 +53,7 @@
 	},
 	"globalStyle": {
 		"navigationBarTextStyle": "black",
-		"navigationBarTitleText": "账单管理",
+		"navigationBarTitleText": "账单管理系统",
 		"navigationBarBackgroundColor": "#F8F8F8",
 		"backgroundColor": "#F8F8F8"
 	},
