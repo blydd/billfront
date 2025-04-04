@@ -73,7 +73,15 @@
             }
         },
         "usingComponents" : true,
-        "permission": {}
+        "permission": {},
+        "requiredBackgroundModes": [],
+        "requiredPrivateInfos": [],
+        "networkTimeout": {
+            "request": 60000,
+            "connectSocket": 60000,
+            "uploadFile": 60000,
+            "downloadFile": 60000
+        }
     },
     "mp-alipay" : {
         "usingComponents" : true

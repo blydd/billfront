@@ -157,22 +157,6 @@
       </view>
     </scroll-view>
 
-    <!-- 底部导航栏 -->
-    <view class="tab-bar">
-      <view class="tab-item active">
-        <text class="tab-icon">📋</text>
-        <text>明细</text>
-      </view>
-      <view class="tab-item" @click="navigateTo('/pages/statistics/index')">
-        <text class="tab-icon">📊</text>
-        <text>统计</text>
-      </view>
-      <view class="tab-item" @click="navigateTo('/pages/settings/index')">
-        <text class="tab-icon">⚙️</text>
-        <text>设置</text>
-      </view>
-    </view>
-
     <!-- 添加账单弹框 -->
     <view v-if="showModal" class="modal-wrapper">
       <view class="modal-mask" @click="closeModal"></view>
@@ -1811,37 +1795,6 @@ const groupedTagsForDetail = computed(() => {
       font-size: 28rpx;
       color: #999;
       margin-top: 20rpx;
-    }
-  }
-}
-
-.tab-bar {
-  height: 100rpx;
-  display: flex;
-  background-color: #fff;
-  border-top: 1px solid #eee;
-  position: fixed;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  z-index: 100;
-  
-  .tab-item {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    font-size: 24rpx;
-    color: #666;
-    
-    &.active {
-      color: #4CAF50;
-    }
-    
-    .tab-icon {
-      font-size: 32rpx;
-      margin-bottom: 4rpx;
     }
   }
 }

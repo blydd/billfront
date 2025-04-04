@@ -5,13 +5,13 @@
       <view class="month-picker">
         <view class="month-switcher">
           <view class="arrow left-arrow" @click="switchMonth(-1)">
-            <text class="icon-text">&lt;</text>
+            <text class="icon-text">←</text>
           </view>
           <picker mode="date" fields="month" :value="currentDate" @change="handleDateChange">
             <view class="picker-text">{{formatDate(currentDate)}}</view>
           </picker>
           <view class="arrow right-arrow" @click="switchMonth(1)">
-            <text class="icon-text">&gt;</text>
+            <text class="icon-text">→</text>
           </view>
         </view>
       </view>
@@ -84,28 +84,12 @@
         </view>
       </view>
     </view>
-
-    <!-- 底部导航栏 -->
-    <view class="tab-bar">
-      <view class="tab-item" @click="navigateTo('/pages/index/index')">
-        <text class="tab-icon">📋</text>
-        <text>明细</text>
-      </view>
-      <view class="tab-item active">
-        <text class="tab-icon">📊</text>
-        <text>统计</text>
-      </view>
-      <view class="tab-item" @click="navigateTo('/pages/settings/index')">
-        <text class="tab-icon">⚙️</text>
-        <text>设置</text>
-      </view>
-    </view>
   </view>
 </template>
 
 <script setup>
 import { ref, computed, onMounted, watch } from 'vue'
-import { onLoad } from '@dcloudio/uni-app'
+import { onLoad, onShow } from '@dcloudio/uni-app'
 
 // 当前选择的日期
 const currentDate = ref(formatDefaultDate())
@@ -156,11 +140,11 @@ function formatDefaultDate() {
 const queryBills = async () => {
   try {
     const params = {
-      userId: 1, // 这里暂时写死，实际应该从用户登录信息中获取
+      userId: 1,
       month: currentDate.value,
       accountType: selectedAccountType.value === '储蓄账户' ? 1 :
                   selectedAccountType.value === '信用账户' ? 2 : undefined,
-      tagType: selectedTagType.value === '账单类型' ? 2 : 1 // 根据选择传递对应的值
+      tagType: selectedTagType.value === '账单类型' ? 2 : 1
     }
 
     const response = await new Promise((resolve, reject) => {
@@ -316,17 +300,14 @@ const handleDateChange = (e) => {
   queryBills()
 }
 
-// 页面加载时查询数据
+// 页面加载和显示时查询数据
 onMounted(() => {
   queryBills()
 })
 
-// 页面跳转
-const navigateTo = (url) => {
-  uni.navigateTo({
-    url
-  })
-}
+onShow(() => {
+  queryBills()
+})
 </script>
 
 <style lang="scss">
@@ -536,37 +517,6 @@ const navigateTo = (url) => {
           color: #333;
         }
       }
-    }
-  }
-}
-
-.tab-bar {
-  height: 100rpx;
-  display: flex;
-  background-color: #fff;
-  border-top: 1px solid #eee;
-  position: fixed;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  z-index: 100;
-  
-  .tab-item {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    font-size: 24rpx;
-    color: #666;
-    
-    &.active {
-      color: #4CAF50;
-    }
-    
-    .tab-icon {
-      font-size: 32rpx;
-      margin-bottom: 4rpx;
     }
   }
 }
