@@ -30,7 +30,7 @@ const request = (options) => {
     
     // #ifdef MP-WEIXIN
     // 小程序环境使用完整URL
-    url = 'https://your-api-domain.com' + url;
+    url = 'https://yqccrdqeszui.sealosbja.site' + url;
     // #endif
   }
   
@@ -41,7 +41,9 @@ const request = (options) => {
       method: options.method || 'GET',
       data: options.data,
       header: header,
+      timeout: 30000, // 设置30秒超时
       success: (res) => {
+        console.log(`请求成功 [${options.method || 'GET'}] ${url}:`, res)
         // 检查token是否过期
         if (res.statusCode === 401 && !isAuthApi) {
           // token过期，显示提示
@@ -59,13 +61,17 @@ const request = (options) => {
           // 触发授权状态更新
           uni.$emit('updateAuthStatus', false)
           
-          reject(res)
+          reject(new Error('登录已过期'))
         } else {
           resolve(res)
         }
       },
       fail: (err) => {
+        console.error(`请求失败 [${options.method || 'GET'}] ${url}:`, err)
         reject(err)
+      },
+      complete: () => {
+        console.log(`请求完成 [${options.method || 'GET'}] ${url}`)
       }
     })
   })
