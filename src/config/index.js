@@ -1,5 +1,5 @@
 // API 基础地址
-export const BASE_URL = 'http://10.0.2.2:8080'
+export const BASE_URL = 'http://localhost:8080'
 
 // API 接口地址
 export const API = {

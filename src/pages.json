@@ -7,12 +7,6 @@
 			}
 		},
 		{
-			"path": "pages/auth/index",
-			"style": {
-				"navigationBarTitleText": "授权登录"
-			}
-		},
-		{
 			"path": "pages/statistics/index",
 			"style": {
 				"navigationBarTitleText": "统计分析"
