@@ -5,13 +5,13 @@
       <view class="month-picker">
         <view class="month-switcher">
           <view class="arrow left-arrow" @click="switchMonth(-1)">
-            <text class="icon-text">&lt;</text>
+            <text class="icon-text">←</text>
           </view>
           <picker mode="date" fields="month" :value="currentDate" @change="handleDateChange">
             <view class="picker-text">{{formatDate(currentDate)}}</view>
           </picker>
           <view class="arrow right-arrow" @click="switchMonth(1)">
-            <text class="icon-text">&gt;</text>
+            <text class="icon-text">→</text>
           </view>
         </view>
       </view>
