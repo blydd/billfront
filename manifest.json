@@ -10,10 +10,10 @@
       "port": 5173,
       "proxy": {
         "/api": {
-          "target": "http://localhost:8080",
+          "target": "https://yqccrdqeszui.sealosbja.site",
           "changeOrigin": true,
           "ws": true,
-          "secure": false
+          "secure": true
         }
       }
     }
@@ -58,7 +58,10 @@
       "checkSiteMap": false,
       "minifyWXSS": true,
       "minifyWXML": true,
-      "ignoreUploadUnusedFiles": true
+      "ignoreUploadUnusedFiles": true,
+      "useCompilerPlugins": false,
+      "useApiHook": true,
+      "useApiHostProcess": true
     },
     "usingComponents": true,
     "miniprogramRoot": "./dist/build/mp-weixin/",
@@ -67,6 +70,15 @@
       "scope.userInfo": {
         "desc": "用于完善会员资料"
       }
+    },
+    "requiredPrivateInfos": [
+      "getLocation"
+    ],
+    "networkTimeout": {
+      "request": 60000,
+      "connectSocket": 60000,
+      "uploadFile": 60000,
+      "downloadFile": 60000
     }
   },
   "vueVersion": "3"
