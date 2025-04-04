@@ -139,9 +139,10 @@ function formatDefaultDate() {
 // 查询账单数据
 const queryBills = async () => {
   try {
-    // 检查token
+    // 检查token和userId
     const token = uni.getStorageSync('token')
-    if (!token) {
+    const userId = uni.getStorageSync('userId')
+    if (!token || !userId) {
       uni.showToast({
         title: '请先登录',
         icon: 'none',
@@ -151,45 +152,40 @@ const queryBills = async () => {
     }
 
     const params = {
-      userId: 1,
+      userId: userId,
       month: currentDate.value,
       accountType: selectedAccountType.value === '储蓄账户' ? 1 :
                   selectedAccountType.value === '信用账户' ? 2 : undefined,
       tagType: selectedTagType.value === '账单类型' ? 2 : 1
     }
 
-    const response = await new Promise((resolve, reject) => {
-      uni.request({
-        url: '/api/bills/query',
-        method: 'POST',
-        data: params,
-        header: {
-          'content-type': 'application/json',
-          'Authorization': token
-        },
-        success: (res) => {
-          resolve(res)
-        },
-        fail: (err) => {
-          reject(err)
-        }
-      })
+    const [error, response] = await uni.request({
+      url: 'http://localhost:8080/api/bills/query',
+      method: 'POST',
+      data: params,
+      header: {
+        'content-type': 'application/json'
+      }
     })
 
+    if (error) {
+      throw error
+    }
+
     if (response.statusCode === 200 && response.data.code === 200) {
-      billList.value = response.data.data
+      billList.value = response.data.data || []
       calculateTotals()
       updateCategoryData()
+    } else if (response.statusCode === 401) {
+      // 401错误会被请求拦截器处理，这里不需要额外处理
+      return
     } else {
-      uni.showToast({
-        title: response.data?.message || '查询失败',
-        icon: 'none'
-      })
+      throw new Error(response.data?.message || '查询失败')
     }
   } catch (error) {
     console.error('查询账单失败:', error)
     uni.showToast({
-      title: '网络错误，请检查网络连接',
+      title: error.message || '网络错误，请检查网络连接',
       icon: 'none'
     })
   }
@@ -314,10 +310,12 @@ const handleDateChange = (e) => {
 
 // 页面加载和显示时查询数据
 onMounted(() => {
+  console.log('统计页面加载')
   queryBills()
 })
 
 onShow(() => {
+  console.log('统计页面显示')
   queryBills()
 })
 </script>

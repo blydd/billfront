@@ -16,6 +16,7 @@ export default {
   methods: {
     initRequestInterceptor() {
       const requestTasks = new Set()
+      let isRedirecting = false
       
       uni.addInterceptor('request', {
         invoke(args) {
@@ -25,10 +26,22 @@ export default {
           
           if (needToken) {
             const token = uni.getStorageSync('token')
-            if (!token) {
-              uni.reLaunch({
-                url: '/pages/auth/index'
-              })
+            if (!token && !isRedirecting) {
+              isRedirecting = true
+              // 获取当前页面路径
+              const pages = getCurrentPages()
+              const currentPage = pages[pages.length - 1]
+              const currentPath = currentPage ? `/${currentPage.route}` : '/pages/index/index'
+              
+              // 如果当前不在授权页面，则跳转到授权页面
+              if (currentPath !== '/pages/auth/index') {
+                uni.navigateTo({
+                  url: '/pages/auth/index',
+                  complete: () => {
+                    isRedirecting = false
+                  }
+                })
+              }
               return false
             }
             args.header = {
@@ -41,11 +54,23 @@ export default {
         success(args) {
           requestTasks.delete(args)
           // 处理401未授权的情况
-          if (args.statusCode === 401) {
+          if (args.statusCode === 401 && !isRedirecting) {
+            isRedirecting = true
             uni.clearStorageSync()
-            uni.reLaunch({
-              url: '/pages/auth/index'
-            })
+            // 获取当前页面路径
+            const pages = getCurrentPages()
+            const currentPage = pages[pages.length - 1]
+            const currentPath = currentPage ? `/${currentPage.route}` : '/pages/index/index'
+            
+            // 如果当前不在授权页面，则跳转到授权页面
+            if (currentPath !== '/pages/auth/index') {
+              uni.navigateTo({
+                url: '/pages/auth/index',
+                complete: () => {
+                  isRedirecting = false
+                }
+              })
+            }
           }
         },
         fail(err) {

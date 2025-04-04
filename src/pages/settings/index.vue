@@ -182,9 +182,10 @@ const getTypeValue = (type) => {
 // 获取标签列表
 const fetchTags = async () => {
   try {
-    // 检查token
+    // 检查token和userId
     const token = uni.getStorageSync('token')
-    if (!token) {
+    const userId = uni.getStorageSync('userId')
+    if (!token || !userId) {
       uni.showToast({
         title: '请先登录',
         icon: 'none',
@@ -197,37 +198,33 @@ const fetchTags = async () => {
       title: '加载中...'
     })
     
-    const response = await new Promise((resolve, reject) => {
-      uni.request({
-        url: '/api/tags',
-        method: 'GET',
-        header: {
-          'Authorization': token
-        },
-        success: (res) => {
-          resolve(res)
-        },
-        fail: (err) => {
-          reject(err)
-        }
-      })
+    const [error, response] = await uni.request({
+      url: 'http://localhost:8080/api/tags',
+      method: 'GET',
+      data: {
+        userId: userId
+      }
     })
 
     uni.hideLoading()
 
+    if (error) {
+      throw error
+    }
+
     if (response.statusCode === 200 && response.data.code === 200) {
-      categories.value = response.data.data
+      categories.value = response.data.data || []
+    } else if (response.statusCode === 401) {
+      // 401错误会被请求拦截器处理，这里不需要额外处理
+      return
     } else {
-      uni.showToast({
-        title: response.data?.message || '获取标签失败',
-        icon: 'none'
-      })
+      throw new Error(response.data?.message || '获取标签失败')
     }
   } catch (error) {
     uni.hideLoading()
     console.error('获取标签失败:', error)
     uni.showToast({
-      title: '网络错误，请检查网络连接',
+      title: error.message || '网络错误，请检查网络连接',
       icon: 'none'
     })
   }
@@ -257,9 +254,10 @@ const addTag = async () => {
 // 编辑标签
 const editTag = async (tag) => {
   try {
-    // 检查token
+    // 检查token和userId
     const token = uni.getStorageSync('token')
-    if (!token) {
+    const userId = uni.getStorageSync('userId')
+    if (!token || !userId) {
       uni.showToast({
         title: '请先登录',
         icon: 'none',
@@ -272,40 +270,35 @@ const editTag = async (tag) => {
       title: '加载中...'
     })
     
-    const response = await new Promise((resolve, reject) => {
-      uni.request({
-        url: `/api/tags/${tag.id}`,
-        method: 'GET',
-        header: {
-          'Authorization': token
-        },
-        success: (res) => {
-          resolve(res)
-        },
-        fail: (err) => {
-          reject(err)
-        }
-      })
+    const [error, response] = await uni.request({
+      url: `http://localhost:8080/api/tags/${tag.id}`,
+      method: 'GET',
+      data: {
+        userId: userId
+      }
     })
 
     uni.hideLoading()
 
+    if (error) {
+      throw error
+    }
+
     if (response.statusCode === 200 && response.data.code === 200) {
       currentTag.value = tag
       tagForm.value = { ...response.data.data }
-      // 编辑时不允许修改收支类型
       showPopup.value = true
+    } else if (response.statusCode === 401) {
+      // 401错误会被请求拦截器处理，这里不需要额外处理
+      return
     } else {
-      uni.showToast({
-        title: response.data?.message || '获取标签详情失败',
-        icon: 'none'
-      })
+      throw new Error(response.data?.message || '获取标签详情失败')
     }
   } catch (error) {
     uni.hideLoading()
     console.error('获取标签详情失败:', error)
     uni.showToast({
-      title: '网络错误，请检查网络连接',
+      title: error.message || '网络错误，请检查网络连接',
       icon: 'none'
     })
   }
@@ -383,9 +376,10 @@ const showDeleteConfirm = (tag) => {
 // 删除标签
 const deleteTag = async (tag) => {
   try {
-    // 检查token
+    // 检查token和userId
     const token = uni.getStorageSync('token')
-    if (!token) {
+    const userId = uni.getStorageSync('userId')
+    if (!token || !userId) {
       uni.showToast({
         title: '请先登录',
         icon: 'none',
@@ -398,44 +392,38 @@ const deleteTag = async (tag) => {
       title: '删除中...'
     })
 
-    const response = await new Promise((resolve, reject) => {
-      uni.request({
-        url: `/api/tags/${tag.id}`,
-        method: 'DELETE',
-        header: {
-          'Authorization': token
-        },
-        success: (res) => {
-          resolve(res)
-        },
-        fail: (err) => {
-          reject(err)
-        }
-      })
+    const [error, response] = await uni.request({
+      url: `http://localhost:8080/api/tags/${tag.id}`,
+      method: 'DELETE',
+      data: {
+        userId: userId
+      }
     })
 
     uni.hideLoading()
+
+    if (error) {
+      throw error
+    }
 
     if (response.statusCode === 200 && response.data.code === 200) {
       uni.showToast({
         title: '删除成功',
         icon: 'success'
       })
-      // 关闭编辑弹框
       closeModal()
-      // 重新获取标签列表
       fetchTags()
+    } else if (response.statusCode === 401) {
+      // 401错误会被请求拦截器处理，这里不需要额外处理
+      return
     } else {
-      uni.showToast({
-        title: response.data?.message || '删除失败',
-        icon: 'none'
-      })
+      throw new Error(response.data?.message || '删除失败')
     }
   } catch (error) {
     uni.hideLoading()
     console.error('删除标签失败:', error)
     uni.showToast({
-      title: '网络错误，请检查网络连接',
+      title: error.message || '网络错误，请检查网络连接',
       icon: 'none'
     })
   }
@@ -488,9 +476,10 @@ const saveTag = async () => {
   }
   
   try {
-    // 检查token
+    // 检查token和userId
     const token = uni.getStorageSync('token')
-    if (!token) {
+    const userId = uni.getStorageSync('userId')
+    if (!token || !userId) {
       uni.showToast({
         title: '请先登录',
         icon: 'none',
@@ -499,49 +488,44 @@ const saveTag = async () => {
       return
     }
 
-    const url = currentTag.value ? `/api/tags/${currentTag.value.id}` : '/api/tags'
+    const url = currentTag.value ? 
+      `http://localhost:8080/api/tags/${currentTag.value.id}` : 
+      'http://localhost:8080/api/tags'
     const method = currentTag.value ? 'PUT' : 'POST'
     
-    const response = await new Promise((resolve, reject) => {
-      uni.request({
-        url,
-        method,
-        data: {
-          name: tagForm.value.name,
-          inoutType: tagForm.value.inoutType,
-          tagType: tagForm.value.tagType,
-          accountType: tagForm.value.accountType,
-        },
-        header: {
-          'Authorization': token,
-          'content-type': 'application/json'
-        },
-        success: (res) => {
-          resolve(res)
-        },
-        fail: (err) => {
-          reject(err)
-        }
-      })
+    const [error, response] = await uni.request({
+      url,
+      method,
+      data: {
+        userId: userId,
+        name: tagForm.value.name,
+        inoutType: tagForm.value.inoutType,
+        tagType: tagForm.value.tagType,
+        accountType: tagForm.value.accountType,
+      }
     })
     
+    if (error) {
+      throw error
+    }
+
     if (response.statusCode === 200 && response.data.code === 200) {
       uni.showToast({
         title: currentTag.value ? '更新成功' : '添加成功',
         icon: 'success'
       })
       closeModal()
-      fetchTags() // 重新获取标签列表
+      fetchTags()
+    } else if (response.statusCode === 401) {
+      // 401错误会被请求拦截器处理，这里不需要额外处理
+      return
     } else {
-      uni.showToast({
-        title: response.data?.message || '操作失败',
-        icon: 'none'
-      })
+      throw new Error(response.data?.message || '操作失败')
     }
   } catch (error) {
     console.error('保存标签失败:', error)
     uni.showToast({
-      title: '操作失败，请稍后重试',
+      title: error.message || '操作失败，请稍后重试',
       icon: 'none'
     })
   }
