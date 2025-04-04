@@ -139,6 +139,17 @@ function formatDefaultDate() {
 // 查询账单数据
 const queryBills = async () => {
   try {
+    // 检查token
+    const token = uni.getStorageSync('token')
+    if (!token) {
+      uni.showToast({
+        title: '请先登录',
+        icon: 'none',
+        duration: 2000
+      })
+      return
+    }
+
     const params = {
       userId: 1,
       month: currentDate.value,
@@ -153,7 +164,8 @@ const queryBills = async () => {
         method: 'POST',
         data: params,
         header: {
-          'content-type': 'application/json'
+          'content-type': 'application/json',
+          'Authorization': token
         },
         success: (res) => {
           resolve(res)

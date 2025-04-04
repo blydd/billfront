@@ -182,6 +182,17 @@ const getTypeValue = (type) => {
 // 获取标签列表
 const fetchTags = async () => {
   try {
+    // 检查token
+    const token = uni.getStorageSync('token')
+    if (!token) {
+      uni.showToast({
+        title: '请先登录',
+        icon: 'none',
+        duration: 2000
+      })
+      return
+    }
+
     uni.showLoading({
       title: '加载中...'
     })
@@ -190,6 +201,9 @@ const fetchTags = async () => {
       uni.request({
         url: '/api/tags',
         method: 'GET',
+        header: {
+          'Authorization': token
+        },
         success: (res) => {
           resolve(res)
         },
@@ -243,6 +257,17 @@ const addTag = async () => {
 // 编辑标签
 const editTag = async (tag) => {
   try {
+    // 检查token
+    const token = uni.getStorageSync('token')
+    if (!token) {
+      uni.showToast({
+        title: '请先登录',
+        icon: 'none',
+        duration: 2000
+      })
+      return
+    }
+
     uni.showLoading({
       title: '加载中...'
     })
@@ -251,6 +276,9 @@ const editTag = async (tag) => {
       uni.request({
         url: `/api/tags/${tag.id}`,
         method: 'GET',
+        header: {
+          'Authorization': token
+        },
         success: (res) => {
           resolve(res)
         },
@@ -355,6 +383,17 @@ const showDeleteConfirm = (tag) => {
 // 删除标签
 const deleteTag = async (tag) => {
   try {
+    // 检查token
+    const token = uni.getStorageSync('token')
+    if (!token) {
+      uni.showToast({
+        title: '请先登录',
+        icon: 'none',
+        duration: 2000
+      })
+      return
+    }
+
     uni.showLoading({
       title: '删除中...'
     })
@@ -363,6 +402,9 @@ const deleteTag = async (tag) => {
       uni.request({
         url: `/api/tags/${tag.id}`,
         method: 'DELETE',
+        header: {
+          'Authorization': token
+        },
         success: (res) => {
           resolve(res)
         },
@@ -446,6 +488,17 @@ const saveTag = async () => {
   }
   
   try {
+    // 检查token
+    const token = uni.getStorageSync('token')
+    if (!token) {
+      uni.showToast({
+        title: '请先登录',
+        icon: 'none',
+        duration: 2000
+      })
+      return
+    }
+
     const url = currentTag.value ? `/api/tags/${currentTag.value.id}` : '/api/tags'
     const method = currentTag.value ? 'PUT' : 'POST'
     
@@ -458,6 +511,10 @@ const saveTag = async () => {
           inoutType: tagForm.value.inoutType,
           tagType: tagForm.value.tagType,
           accountType: tagForm.value.accountType,
+        },
+        header: {
+          'Authorization': token,
+          'content-type': 'application/json'
         },
         success: (res) => {
           resolve(res)

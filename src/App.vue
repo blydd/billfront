@@ -35,31 +35,84 @@ export default {
     initRequestInterceptor() {
       console.log('初始化请求拦截器')
       uni.addInterceptor('request', {
-        invoke(args) {
-          console.log('请求参数:', args)
-          // 添加token到请求头
+        invoke(options) {
+          // 获取token
           const token = uni.getStorageSync('token')
-          args.header = {
-            ...args.header,
-            'content-type': 'application/json',
-            'Authorization': token ? `Bearer ${token}` : ''
+          
+          // 如果没有token，直接跳转到授权
+          if (!token) {
+            // 清除可能存在的过期数据
+            uni.removeStorageSync('token')
+            uni.removeStorageSync('userInfo')
+            uni.removeStorageSync('userId')
+            
+            // 获取当前页面路径
+            const pages = getCurrentPages()
+            const currentPage = pages[pages.length - 1]
+            const currentPath = currentPage ? currentPage.route : ''
+            
+            // 如果不是在授权页面，则跳转到授权
+            if (currentPath !== 'pages/auth/index') {
+              uni.redirectTo({
+                url: '/pages/auth/index'
+              })
+            }
+            return false // 阻止请求继续执行
           }
-          return args
+
+          // 添加token到请求头
+          options.header = {
+            ...options.header,
+            'Authorization': token
+          }
+          return options
         },
-        success(args) {
-          console.log('请求成功:', args)
-          // 如果是登录接口，不处理401
-          if (args.config && args.config.url.includes('/api/user/login')) {
-            return args
+        success(response) {
+          // 处理401错误或其他失败情况
+          if (response.statusCode === 401 || response.data?.code === 401) {
+            // 清除token等数据
+            uni.removeStorageSync('token')
+            uni.removeStorageSync('userInfo')
+            uni.removeStorageSync('userId')
+            
+            // 显示提示
+            uni.showModal({
+              title: '提示',
+              content: '登录已过期，请重新授权',
+              showCancel: false,
+              success: () => {
+                // 获取当前页面路径
+                const pages = getCurrentPages()
+                const currentPage = pages[pages.length - 1]
+                const currentPath = currentPage ? currentPage.route : ''
+                
+                // 如果不是在授权页面，则跳转到授权
+                if (currentPath !== 'pages/auth/index') {
+                  uni.redirectTo({
+                    url: '/pages/auth/index'
+                  })
+                }
+              }
+            })
+            return false
           }
-          // 处理401未授权的情况
-          if (args.statusCode === 401) {
-            uni.exitMiniProgram()
+          
+          // 处理其他业务失败情况
+          if (response.data?.code !== 200) {
+            uni.showToast({
+              title: response.data?.message || '请求失败',
+              icon: 'none'
+            })
           }
-          return args
+          return response
         },
         fail(err) {
           console.error('请求失败:', err)
+          // 显示错误提示
+          uni.showToast({
+            title: '网络请求失败',
+            icon: 'none'
+          })
           return err
         }
       })
@@ -86,6 +139,10 @@ export default {
         return res
       } catch (error) {
         console.error('获取用户信息失败:', error)
+        // 如果用户拒绝授权，跳转到授权页面
+        uni.redirectTo({
+          url: '/pages/auth/index'
+        })
         throw error
       }
     },
@@ -129,11 +186,25 @@ export default {
           
           // 触发登录成功事件，刷新页面数据
           uni.$emit('loginSuccess')
+          
+          // 登录成功后返回之前的页面
+          const pages = getCurrentPages()
+          if (pages.length > 1) {
+            uni.navigateBack()
+          } else {
+            uni.redirectTo({
+              url: '/pages/index/index'
+            })
+          }
         } else {
           throw new Error(response.data?.message || '登录失败')
         }
       } catch (error) {
         console.error('登录失败:', error)
+        uni.showToast({
+          title: '登录失败，请重试',
+          icon: 'none'
+        })
         throw error
       }
     }
