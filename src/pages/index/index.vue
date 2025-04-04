@@ -11,6 +11,11 @@
     
     <!-- 主页内容，只在已授权时显示 -->
     <template v-else>
+      <!-- 自定义导航栏 -->
+      <view class="custom-nav">
+        <text class="nav-title">账单明细</text>
+      </view>
+      
       <!-- 顶部统计 -->
       <view class="header">
         <view class="month-picker">
@@ -401,14 +406,14 @@
             <button class="cancel-btn" @click="closeDeleteConfirm">取消</button>
             <button class="delete-btn" @click="performDelete">删除</button>
           </view>
-    </view>
+        </view>
       </view>
     </template>
   </view>
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { onLoad } from '@dcloudio/uni-app'
 import { API } from '@/config/index.js'
 
@@ -1384,6 +1389,17 @@ const handleAuth = async () => {
     })
   }
 }
+
+// 监听授权状态变化，控制tabBar显示
+watch(isAuthorized, (newVal) => {
+  if (!newVal) {
+    // 未授权时隐藏tabBar
+    uni.hideTabBar()
+  } else {
+    // 已授权时显示tabBar
+    uni.showTabBar()
+  }
+}, { immediate: true })
 </script>
 
 <style lang="scss">
@@ -1393,6 +1409,26 @@ const handleAuth = async () => {
   min-height: 100vh;
   background-color: #f5f5f5;
   padding-bottom: 100rpx;
+}
+
+.custom-nav {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 88rpx;
+  background-color: #F8F8F8;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 999;
+  padding-top: var(--status-bar-height);
+}
+
+.nav-title {
+  font-size: 32rpx;
+  font-weight: 500;
+  color: #333;
 }
 
 .header {
