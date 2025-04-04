@@ -1,397 +1,409 @@
 <template>
   <view class="container">
-    <!-- 顶部统计 -->
-    <view class="header">
-      <view class="month-picker">
-        <view class="month-switcher">
-          <view class="arrow left-arrow" @click="switchMonth(-1)">
-            <text class="icon-text">←</text>
-          </view>
-          <picker mode="date" fields="month" :value="currentDate" @change="handleDateChange">
-            <view class="picker-text">{{formatDate(currentDate)}}</view>
-          </picker>
-          <view class="arrow right-arrow" @click="switchMonth(1)">
-            <text class="icon-text">→</text>
-          </view>
-        </view>
-      </view>
-      
-      <!-- 标签筛选 -->
-      <view class="tag-filter">
-        <!-- 收支类型切换 -->
-        <view class="type-tabs">
-          <view 
-            v-for="type in ['支出', '收入', '不计入收支']" 
-            :key="type"
-            :class="['tab-item', tagFilterType === getTypeValue(type) ? 'active' : '']"
-            @click="tagFilterType = getTypeValue(type)"
-          >
-            <text>{{type}}</text>
-          </view>
-        </view>
-        
-        <scroll-view scroll-y class="tag-scroll">
-          <view class="tag-group" v-for="(group, index) in filteredGroupedTags" :key="index">
-            <view class="group-title">{{getTagTypeLabel(group.tagType)}}</view>
-            <view class="tag-list">
-              <view 
-                v-for="(tag, tagIndex) in group.items" 
-                :key="tagIndex" 
-                :class="['tag-item', selectedTags.includes(tag.id) ? 'active' : '']"
-                @click="selectTag(tag.id)"
-              >
-                <view class="tag-icon" :class="[`tag-type-${tag.inoutType}`, `tag-style-${tag.tagType}`]">
-                  <text class="icon-text">{{tag.name.substring(0, 1)}}</text>
-                </view>
-                <text class="tag-name">{{tag.name}}</text>
-              </view>
-            </view>
-          </view>
-        </scroll-view>
-        
-        <view class="all-tags-btn">
-          <view 
-            :class="['tag-item', 'all-tag', selectedTags.length === 0 ? 'active' : '']"
-            @click="selectTag('all')"
-          >
-            <view class="tag-icon all-icon">
-              <text class="icon-text">全</text>
-            </view>
-            <text class="tag-name">全部</text>
-          </view>
-        </view>
-      </view>
-      
-      <!-- 账户类型筛选和记账按钮 -->
-      <view class="filter-row">
-        <view class="account-type-filter">
-          <view 
-            class="account-type-btn" 
-            :class="{ active: selectedAccountType === '' }"
-            @click="handleAccountTypeSelect('')"
-          >
-            全部
-          </view>
-          <view 
-            class="account-type-btn" 
-            :class="{ active: selectedAccountType === '储蓄账户' }"
-            @click="handleAccountTypeSelect('储蓄账户')"
-          >
-            储蓄账户
-          </view>
-          <view 
-            class="account-type-btn" 
-            :class="{ active: selectedAccountType === '信用账户' }"
-            @click="handleAccountTypeSelect('信用账户')"
-          >
-            信用账户
-          </view>
-        </view>
-        
-        <view class="add-bill-btn" @click="showAddBillModal">
-          <text class="btn-icon">+</text>
-          <text class="btn-text">记账</text>
-        </view>
-      </view>
-      
-      <view class="total-amount">
-        <view class="amount-item">
-          <text class="label">总支出¥</text>
-          <text class="value">{{totalExpense}}</text>
-        </view>
-        <view class="amount-item">
-          <text class="label">总入账¥</text>
-          <text class="value">{{totalIncome}}</text>
-        </view>
+    <!-- 授权按钮 -->
+    <view v-if="!isAuthorized" class="auth-container">
+      <view class="auth-content">
+        <text class="auth-title">欢迎使用记账小程序</text>
+        <text class="auth-desc">需要获取您的用户信息</text>
+        <button class="auth-button" @click="handleAuth">点击授权登录</button>
       </view>
     </view>
-
-    <!-- 账单列表 -->
-    <scroll-view scroll-y class="bill-list">
-      <!-- 调试信息 -->
-      <view class="debug-info" v-if="billList.length > 0 && Object.keys(billGroups).length === 0">
-        <text>接口返回了{{billList.length}}条数据，但未能正确分组</text>
-      </view>
-      
-      <block v-for="(group, date) in billGroups" :key="date">
-        <view class="date-group">
-          <view class="date-header">
-            <text class="date">{{group.date}}</text>
-            <view class="daily-total">
-              <text class="expense">支出 {{group.expense}}</text>
-              <text class="income">收入 {{group.income}}</text>
+    
+    <!-- 主页内容，只在已授权时显示 -->
+    <template v-else>
+      <!-- 顶部统计 -->
+      <view class="header">
+        <view class="month-picker">
+          <view class="month-switcher">
+            <view class="arrow left-arrow" @click="switchMonth(-1)">
+              <text class="icon-text">←</text>
             </view>
-          </view>
-          
-          <view class="bill-items">
-            <view class="bill-item" 
-                  v-for="(item, index) in group.items" 
-                  :key="index"
-                  @click="showBillDetail(item)">
-              <view class="left">
-                <view class="icon" :class="item.type">
-                  <text class="icon-text">{{getFirstChar(item)}}</text>
-                </view>
-                <view class="info">
-                  <view class="title-row">
-                    <text class="title">{{item.remark || '未命名账单'}}</text>
-                    <text class="time">{{formatTime(item.billDate)}}</text>
-                  </view>
-                  <view class="tags">
-                    <text class="tag" v-for="(tag, tagIndex) in item.tags" :key="tagIndex">{{tag.name}}</text>
-                  </view>
-                </view>
-              </view>
-              <view class="right">
-                <text class="amount" :class="item.inoutType === 1 ? 'expense' : 'income'">
-                  {{item.inoutType === 1 ? '-' : '+'}}{{item.amount}}
-                </text>
-              </view>
+            <picker mode="date" fields="month" :value="currentDate" @change="handleDateChange">
+              <view class="picker-text">{{formatDate(currentDate)}}</view>
+            </picker>
+            <view class="arrow right-arrow" @click="switchMonth(1)">
+              <text class="icon-text">→</text>
             </view>
-          </view>
-        </view>
-      </block>
-      
-      <view class="empty-state" v-if="billList.length === 0">
-        <text class="empty-text">暂无账单数据</text>
-      </view>
-    </scroll-view>
-
-    <!-- 添加账单弹框 -->
-    <view v-if="showModal" class="modal-wrapper">
-      <view class="modal-mask" @click="closeModal"></view>
-      <view class="bill-modal" @click.stop>
-        <view class="modal-header">
-          <text class="title">新增账单</text>
-          <view class="close-btn" @click="closeModal">
-            <text class="close-icon">×</text>
           </view>
         </view>
         
-        <view class="modal-content">
-          <view class="form-item">
-            <text class="label">金额</text>
-            <input type="digit" v-model="billForm.amount" placeholder="请输入金额" />
-          </view>
-          
-          <view class="form-item">
-            <text class="label">描述</text>
-            <input type="text" v-model="billForm.remark" placeholder="请输入账单描述" />
-          </view>
-          
-          <view class="form-item">
-            <text class="label">收支类型</text>
-            <view class="type-selector">
-              <view 
-                class="type-item" 
-                :class="{ active: billForm.inoutType === 1 }"
-                @click="billForm.inoutType = 1"
-              >
-                支出
-              </view>
-              <view 
-                class="type-item" 
-                :class="{ active: billForm.inoutType === 2 }"
-                @click="billForm.inoutType = 2"
-              >
-                收入
-              </view>
-              <view 
-                class="type-item" 
-                :class="{ active: billForm.inoutType === 3 }"
-                @click="billForm.inoutType = 3"
-              >
-                不计入收支
-              </view>
+        <!-- 标签筛选 -->
+        <view class="tag-filter">
+          <!-- 收支类型切换 -->
+          <view class="type-tabs">
+            <view 
+              v-for="type in ['支出', '收入', '不计入收支']" 
+              :key="type"
+              :class="['tab-item', tagFilterType === getTypeValue(type) ? 'active' : '']"
+              @click="tagFilterType = getTypeValue(type)"
+            >
+              <text>{{type}}</text>
             </view>
           </view>
           
-          <view class="form-item tag-form-item">
-            <text class="label">标签</text>
-            <view class="tag-selector">
-              <view class="tag-group" v-for="(group, index) in groupedTagsForForm" :key="index">
-                <view class="group-title">{{getTagTypeLabel(group.tagType)}}</view>
-                <view class="tag-grid">
-                  <view 
-                    v-for="(tag, tagIndex) in group.items" 
-                    :key="tagIndex"
-                    :class="['tag-select-item', billForm.tags.includes(tag.id) ? 'active' : '']"
-                    @click="toggleTag(tag.id)"
-                  >
-                    <view class="tag-icon" :class="[`tag-type-${tag.inoutType}`, `tag-style-${tag.tagType}`]">
-                      <text class="icon-text">{{tag.name.substring(0, 1)}}</text>
+          <scroll-view scroll-y class="tag-scroll">
+            <view class="tag-group" v-for="(group, index) in filteredGroupedTags" :key="index">
+              <view class="group-title">{{getTagTypeLabel(group.tagType)}}</view>
+              <view class="tag-list">
+                <view 
+                  v-for="(tag, tagIndex) in group.items" 
+                  :key="tagIndex" 
+                  :class="['tag-item', selectedTags.includes(tag.id) ? 'active' : '']"
+                  @click="selectTag(tag.id)"
+                >
+                  <view class="tag-icon" :class="[`tag-type-${tag.inoutType}`, `tag-style-${tag.tagType}`]">
+                    <text class="icon-text">{{tag.name.substring(0, 1)}}</text>
+                  </view>
+                  <text class="tag-name">{{tag.name}}</text>
+                </view>
+              </view>
+            </view>
+          </scroll-view>
+          
+          <view class="all-tags-btn">
+            <view 
+              :class="['tag-item', 'all-tag', selectedTags.length === 0 ? 'active' : '']"
+              @click="selectTag('all')"
+            >
+              <view class="tag-icon all-icon">
+                <text class="icon-text">全</text>
+              </view>
+              <text class="tag-name">全部</text>
+            </view>
+          </view>
+        </view>
+        
+        <!-- 账户类型筛选和记账按钮 -->
+        <view class="filter-row">
+          <view class="account-type-filter">
+            <view 
+              class="account-type-btn" 
+              :class="{ active: selectedAccountType === '' }"
+              @click="handleAccountTypeSelect('')"
+            >
+              全部
+            </view>
+            <view 
+              class="account-type-btn" 
+              :class="{ active: selectedAccountType === '储蓄账户' }"
+              @click="handleAccountTypeSelect('储蓄账户')"
+            >
+              储蓄账户
+            </view>
+            <view 
+              class="account-type-btn" 
+              :class="{ active: selectedAccountType === '信用账户' }"
+              @click="handleAccountTypeSelect('信用账户')"
+            >
+              信用账户
+            </view>
+          </view>
+          
+          <view class="add-bill-btn" @click="showAddBillModal">
+            <text class="btn-icon">+</text>
+            <text class="btn-text">记账</text>
+          </view>
+        </view>
+        
+        <view class="total-amount">
+          <view class="amount-item">
+            <text class="label">总支出¥</text>
+            <text class="value">{{totalExpense}}</text>
+          </view>
+          <view class="amount-item">
+            <text class="label">总入账¥</text>
+            <text class="value">{{totalIncome}}</text>
+          </view>
+        </view>
+      </view>
+
+      <!-- 账单列表 -->
+      <scroll-view scroll-y class="bill-list">
+        <!-- 调试信息 -->
+        <view class="debug-info" v-if="billList.length > 0 && Object.keys(billGroups).length === 0">
+          <text>接口返回了{{billList.length}}条数据，但未能正确分组</text>
+        </view>
+        
+        <block v-for="(group, date) in billGroups" :key="date">
+          <view class="date-group">
+            <view class="date-header">
+              <text class="date">{{group.date}}</text>
+              <view class="daily-total">
+                <text class="expense">支出 {{group.expense}}</text>
+                <text class="income">收入 {{group.income}}</text>
+              </view>
+            </view>
+            
+            <view class="bill-items">
+              <view class="bill-item" 
+                    v-for="(item, index) in group.items" 
+                    :key="index"
+                    @click="showBillDetail(item)">
+                <view class="left">
+                  <view class="icon" :class="item.type">
+                    <text class="icon-text">{{getFirstChar(item)}}</text>
+                  </view>
+                  <view class="info">
+                    <view class="title-row">
+                      <text class="title">{{item.remark || '未命名账单'}}</text>
+                      <text class="time">{{formatTime(item.billDate)}}</text>
                     </view>
-                    <text class="tag-name">{{tag.name}}</text>
-                  </view>
-                </view>
-              </view>
-              
-              <view v-if="filteredTags.length === 0" class="empty-tags">
-                暂无匹配的标签，请先在设置中添加标签
-              </view>
-            </view>
-          </view>
-          
-          <view class="form-item">
-            <text class="label">日期</text>
-            <view class="date-picker" @click="showDatePicker">
-              {{billForm.billDate}}
-            </view>
-          </view>
-        </view>
-        
-        <view class="modal-footer">
-          <button class="cancel-btn" @click="closeModal">取消</button>
-          <button class="confirm-btn" @click="saveBill">保存</button>
-        </view>
-      </view>
-    </view>
-
-    <!-- 日期选择器弹框 -->
-    <view v-if="showDatePickerModal" class="date-picker-modal">
-      <view class="date-picker-mask" @click="closeDatePicker"></view>
-      <view class="date-picker-content">
-        <view class="date-picker-header">
-          <text>选择日期和时间</text>
-        </view>
-        <view class="date-picker-body">
-          <picker-view 
-            :value="datePickerValue" 
-            @change="onDatePickerChange"
-            class="picker-view"
-            indicator-style="height: 80rpx;"
-            :mask-style="maskStyle"
-          >
-            <picker-view-column>
-              <view class="picker-item" v-for="(year, index) in years" :key="index">{{year}}年</view>
-            </picker-view-column>
-            <picker-view-column>
-              <view class="picker-item" v-for="(month, index) in months" :key="index">{{month}}月</view>
-            </picker-view-column>
-            <picker-view-column>
-              <view class="picker-item" v-for="(day, index) in days" :key="index">{{day}}日</view>
-            </picker-view-column>
-            <picker-view-column>
-              <view class="picker-item" v-for="(hour, index) in hours" :key="index">{{hour}}时</view>
-            </picker-view-column>
-            <picker-view-column>
-              <view class="picker-item" v-for="(minute, index) in minutes" :key="index">{{minute}}分</view>
-            </picker-view-column>
-            <picker-view-column>
-              <view class="picker-item" v-for="(second, index) in seconds" :key="index">{{second}}秒</view>
-            </picker-view-column>
-          </picker-view>
-        </view>
-        <view class="date-picker-footer">
-          <button class="cancel-btn" @click="closeDatePicker">取消</button>
-          <button class="confirm-btn" @click="confirmDatePicker">确定</button>
-        </view>
-      </view>
-    </view>
-
-    <!-- 账单详情弹框 -->
-    <view v-if="showDetailModal" class="modal-wrapper">
-      <view class="modal-mask" @click="closeDetailModal"></view>
-      <view class="bill-modal" @click.stop>
-        <view class="modal-header">
-          <text class="title">账单详情</text>
-          <view class="close-btn" @click="closeDetailModal">
-            <text class="close-icon">×</text>
-          </view>
-        </view>
-        
-        <view class="modal-content">
-          <view class="form-item">
-            <text class="label">金额</text>
-            <input type="digit" v-model="billDetail.amount" placeholder="请输入金额" />
-          </view>
-          
-          <view class="form-item">
-            <text class="label">描述</text>
-            <input type="text" v-model="billDetail.remark" placeholder="请输入账单描述" />
-          </view>
-          
-          <view class="form-item">
-            <text class="label">收支类型</text>
-            <view class="type-selector">
-              <view 
-                class="type-item" 
-                :class="{ active: billDetail.inoutType === 1 }"
-                @click="billDetail.inoutType = 1"
-              >
-                支出
-              </view>
-              <view 
-                class="type-item" 
-                :class="{ active: billDetail.inoutType === 2 }"
-                @click="billDetail.inoutType = 2"
-              >
-                收入
-              </view>
-              <view 
-                class="type-item" 
-                :class="{ active: billDetail.inoutType === 3 }"
-                @click="billDetail.inoutType = 3"
-              >
-                不计入收支
-              </view>
-            </view>
-          </view>
-          
-          <view class="form-item tag-form-item">
-            <text class="label">标签</text>
-            <view class="tag-selector">
-              <view class="tag-group" v-for="(group, index) in groupedTagsForDetail" :key="index">
-                <view class="group-title">{{getTagTypeLabel(group.tagType)}}</view>
-                <view class="tag-grid">
-                  <view 
-                    v-for="(tag, tagIndex) in group.items" 
-                    :key="tagIndex"
-                    :class="['tag-select-item', billDetail.tags.includes(tag.id) ? 'active' : '']"
-                    @click="toggleDetailTag(tag.id)"
-                  >
-                    <view class="tag-icon" :class="[`tag-type-${tag.inoutType}`, `tag-style-${tag.tagType}`]">
-                      <text class="icon-text">{{tag.name.substring(0, 1)}}</text>
+                    <view class="tags">
+                      <text class="tag" v-for="(tag, tagIndex) in item.tags" :key="tagIndex">{{tag.name}}</text>
                     </view>
-                    <text class="tag-name">{{tag.name}}</text>
                   </view>
                 </view>
+                <view class="right">
+                  <text class="amount" :class="item.inoutType === 1 ? 'expense' : 'income'">
+                    {{item.inoutType === 1 ? '-' : '+'}}{{item.amount}}
+                  </text>
+                </view>
               </view>
-              
-              <view v-if="filteredTagsForDetail.length === 0" class="empty-tags">
-                暂无匹配的标签，请先在设置中添加标签
+            </view>
+          </view>
+        </block>
+        
+        <view class="empty-state" v-if="billList.length === 0">
+          <text class="empty-text">暂无账单数据</text>
+        </view>
+      </scroll-view>
+
+      <!-- 添加账单弹框 -->
+      <view v-if="showModal" class="modal-wrapper">
+        <view class="modal-mask" @click="closeModal"></view>
+        <view class="bill-modal" @click.stop>
+          <view class="modal-header">
+            <text class="title">新增账单</text>
+            <view class="close-btn" @click="closeModal">
+              <text class="close-icon">×</text>
+            </view>
+          </view>
+          
+          <view class="modal-content">
+            <view class="form-item">
+              <text class="label">金额</text>
+              <input type="digit" v-model="billForm.amount" placeholder="请输入金额" />
+            </view>
+            
+            <view class="form-item">
+              <text class="label">描述</text>
+              <input type="text" v-model="billForm.remark" placeholder="请输入账单描述" />
+            </view>
+            
+            <view class="form-item">
+              <text class="label">收支类型</text>
+              <view class="type-selector">
+                <view 
+                  class="type-item" 
+                  :class="{ active: billForm.inoutType === 1 }"
+                  @click="billForm.inoutType = 1"
+                >
+                  支出
+                </view>
+                <view 
+                  class="type-item" 
+                  :class="{ active: billForm.inoutType === 2 }"
+                  @click="billForm.inoutType = 2"
+                >
+                  收入
+                </view>
+                <view 
+                  class="type-item" 
+                  :class="{ active: billForm.inoutType === 3 }"
+                  @click="billForm.inoutType = 3"
+                >
+                  不计入收支
+                </view>
+              </view>
+            </view>
+            
+            <view class="form-item tag-form-item">
+              <text class="label">标签</text>
+              <view class="tag-selector">
+                <view class="tag-group" v-for="(group, index) in groupedTagsForForm" :key="index">
+                  <view class="group-title">{{getTagTypeLabel(group.tagType)}}</view>
+                  <view class="tag-grid">
+                    <view 
+                      v-for="(tag, tagIndex) in group.items" 
+                      :key="tagIndex"
+                      :class="['tag-select-item', billForm.tags.includes(tag.id) ? 'active' : '']"
+                      @click="toggleTag(tag.id)"
+                    >
+                      <view class="tag-icon" :class="[`tag-type-${tag.inoutType}`, `tag-style-${tag.tagType}`]">
+                        <text class="icon-text">{{tag.name.substring(0, 1)}}</text>
+                      </view>
+                      <text class="tag-name">{{tag.name}}</text>
+                    </view>
+                  </view>
+                </view>
+                
+                <view v-if="filteredTags.length === 0" class="empty-tags">
+                  暂无匹配的标签，请先在设置中添加标签
+                </view>
+              </view>
+            </view>
+            
+            <view class="form-item">
+              <text class="label">日期</text>
+              <view class="date-picker" @click="showDatePicker">
+                {{billForm.billDate}}
               </view>
             </view>
           </view>
           
-          <view class="form-item">
-            <text class="label">日期</text>
-            <view class="date-picker" @click="showDatePickerForDetail">
-              {{billDetail.billDate}}
-            </view>
+          <view class="modal-footer">
+            <button class="cancel-btn" @click="closeModal">取消</button>
+            <button class="confirm-btn" @click="saveBill">保存</button>
           </view>
         </view>
-        
-        <view class="modal-footer detail-footer">
-          <button class="cancel-btn" @click="closeDetailModal">取消</button>
-          <button class="delete-btn" @click="deleteBill">删除</button>
-          <button class="confirm-btn" @click="updateBill">保存</button>
-        </view>
       </view>
-    </view>
 
-    <!-- 自定义确认弹窗 -->
-    <view v-if="showDeleteConfirm" class="custom-confirm-modal">
-      <view class="confirm-mask" @click="closeDeleteConfirm"></view>
-      <view class="confirm-content">
-        <view class="confirm-title">删除账单</view>
-        <view class="confirm-message">确定要删除这条账单记录吗？</view>
-        <view class="confirm-buttons">
-          <button class="cancel-btn" @click="closeDeleteConfirm">取消</button>
-          <button class="delete-btn" @click="performDelete">删除</button>
+      <!-- 日期选择器弹框 -->
+      <view v-if="showDatePickerModal" class="date-picker-modal">
+        <view class="date-picker-mask" @click="closeDatePicker"></view>
+        <view class="date-picker-content">
+          <view class="date-picker-header">
+            <text>选择日期和时间</text>
+          </view>
+          <view class="date-picker-body">
+            <picker-view 
+              :value="datePickerValue" 
+              @change="onDatePickerChange"
+              class="picker-view"
+              indicator-style="height: 80rpx;"
+              :mask-style="maskStyle"
+            >
+              <picker-view-column>
+                <view class="picker-item" v-for="(year, index) in years" :key="index">{{year}}年</view>
+              </picker-view-column>
+              <picker-view-column>
+                <view class="picker-item" v-for="(month, index) in months" :key="index">{{month}}月</view>
+              </picker-view-column>
+              <picker-view-column>
+                <view class="picker-item" v-for="(day, index) in days" :key="index">{{day}}日</view>
+              </picker-view-column>
+              <picker-view-column>
+                <view class="picker-item" v-for="(hour, index) in hours" :key="index">{{hour}}时</view>
+              </picker-view-column>
+              <picker-view-column>
+                <view class="picker-item" v-for="(minute, index) in minutes" :key="index">{{minute}}分</view>
+              </picker-view-column>
+              <picker-view-column>
+                <view class="picker-item" v-for="(second, index) in seconds" :key="index">{{second}}秒</view>
+              </picker-view-column>
+            </picker-view>
+          </view>
+          <view class="date-picker-footer">
+            <button class="cancel-btn" @click="closeDatePicker">取消</button>
+            <button class="confirm-btn" @click="confirmDatePicker">确定</button>
+          </view>
         </view>
       </view>
-    </view>
+
+      <!-- 账单详情弹框 -->
+      <view v-if="showDetailModal" class="modal-wrapper">
+        <view class="modal-mask" @click="closeDetailModal"></view>
+        <view class="bill-modal" @click.stop>
+          <view class="modal-header">
+            <text class="title">账单详情</text>
+            <view class="close-btn" @click="closeDetailModal">
+              <text class="close-icon">×</text>
+            </view>
+          </view>
+          
+          <view class="modal-content">
+            <view class="form-item">
+              <text class="label">金额</text>
+              <input type="digit" v-model="billDetail.amount" placeholder="请输入金额" />
+            </view>
+            
+            <view class="form-item">
+              <text class="label">描述</text>
+              <input type="text" v-model="billDetail.remark" placeholder="请输入账单描述" />
+            </view>
+            
+            <view class="form-item">
+              <text class="label">收支类型</text>
+              <view class="type-selector">
+                <view 
+                  class="type-item" 
+                  :class="{ active: billDetail.inoutType === 1 }"
+                  @click="billDetail.inoutType = 1"
+                >
+                  支出
+                </view>
+                <view 
+                  class="type-item" 
+                  :class="{ active: billDetail.inoutType === 2 }"
+                  @click="billDetail.inoutType = 2"
+                >
+                  收入
+                </view>
+                <view 
+                  class="type-item" 
+                  :class="{ active: billDetail.inoutType === 3 }"
+                  @click="billDetail.inoutType = 3"
+                >
+                  不计入收支
+                </view>
+              </view>
+            </view>
+            
+            <view class="form-item tag-form-item">
+              <text class="label">标签</text>
+              <view class="tag-selector">
+                <view class="tag-group" v-for="(group, index) in groupedTagsForDetail" :key="index">
+                  <view class="group-title">{{getTagTypeLabel(group.tagType)}}</view>
+                  <view class="tag-grid">
+                    <view 
+                      v-for="(tag, tagIndex) in group.items" 
+                      :key="tagIndex"
+                      :class="['tag-select-item', billDetail.tags.includes(tag.id) ? 'active' : '']"
+                      @click="toggleDetailTag(tag.id)"
+                    >
+                      <view class="tag-icon" :class="[`tag-type-${tag.inoutType}`, `tag-style-${tag.tagType}`]">
+                        <text class="icon-text">{{tag.name.substring(0, 1)}}</text>
+                      </view>
+                      <text class="tag-name">{{tag.name}}</text>
+                    </view>
+                  </view>
+                </view>
+                
+                <view v-if="filteredTagsForDetail.length === 0" class="empty-tags">
+                  暂无匹配的标签，请先在设置中添加标签
+                </view>
+              </view>
+            </view>
+            
+            <view class="form-item">
+              <text class="label">日期</text>
+              <view class="date-picker" @click="showDatePickerForDetail">
+                {{billDetail.billDate}}
+              </view>
+            </view>
+          </view>
+          
+          <view class="modal-footer detail-footer">
+            <button class="cancel-btn" @click="closeDetailModal">取消</button>
+            <button class="delete-btn" @click="deleteBill">删除</button>
+            <button class="confirm-btn" @click="updateBill">保存</button>
+          </view>
+        </view>
+      </view>
+
+      <!-- 自定义确认弹窗 -->
+      <view v-if="showDeleteConfirm" class="custom-confirm-modal">
+        <view class="confirm-mask" @click="closeDeleteConfirm"></view>
+        <view class="confirm-content">
+          <view class="confirm-title">删除账单</view>
+          <view class="confirm-message">确定要删除这条账单记录吗？</view>
+          <view class="confirm-buttons">
+            <button class="cancel-btn" @click="closeDeleteConfirm">取消</button>
+            <button class="delete-btn" @click="performDelete">删除</button>
+          </view>
+        </view>
+      </view>
+    </template>
   </view>
 </template>
 
@@ -445,6 +457,9 @@ const billDetail = ref({
 
 // 标签筛选类型
 const tagFilterType = ref('expense')
+
+// 授权状态
+const isAuthorized = ref(false)
 
 // 根据类型值获取类型名称
 const getTypeValue = (typeName) => {
@@ -820,10 +835,16 @@ const handleDateChange = (e) => {
 
 // 初始化函数
 const init = async () => {
-  // 先查询标签列表
-  await queryTags()
-  // 再查询账单数据
-  await queryBills()
+  // 检查是否已授权
+  const token = uni.getStorageSync('token')
+  isAuthorized.value = !!token
+  
+  if (isAuthorized.value) {
+    // 先查询标签列表
+    await queryTags()
+    // 再查询账单数据
+    await queryBills()
+  }
 }
 
 // 页面加载时初始化
@@ -1341,6 +1362,28 @@ const groupedTagsForDetail = computed(() => {
   // 转换为数组并排序
   return Object.values(groups).sort((a, b) => a.tagType - b.tagType)
 })
+
+// 处理授权按钮点击
+const handleAuth = async () => {
+  try {
+    // 获取用户信息
+    const userInfo = await getApp().getUserInfo()
+    if (userInfo) {
+      // 登录
+      await getApp().login(userInfo)
+      // 更新授权状态
+      isAuthorized.value = true
+      // 加载数据
+      await init()
+    }
+  } catch (error) {
+    console.error('授权失败:', error)
+    uni.showToast({
+      title: '授权失败',
+      icon: 'none'
+    })
+  }
+}
 </script>
 
 <style lang="scss">
@@ -1363,8 +1406,8 @@ const groupedTagsForDetail = computed(() => {
     
     .month-switcher {
       display: flex;
-      align-items: center;
-      justify-content: center;
+  align-items: center;
+  justify-content: center;
       
       .arrow {
         width: 60rpx;
@@ -1402,7 +1445,7 @@ const groupedTagsForDetail = computed(() => {
     position: relative;
     
     .type-tabs {
-      display: flex;
+  display: flex;
       margin-bottom: 20rpx;
       background-color: #f5f5f5;
       border-radius: 12rpx;
@@ -1413,7 +1456,7 @@ const groupedTagsForDetail = computed(() => {
         height: 70rpx;
         display: flex;
         align-items: center;
-        justify-content: center;
+  justify-content: center;
         font-size: 28rpx;
         color: #666;
         border-radius: 8rpx;
@@ -1626,7 +1669,7 @@ const groupedTagsForDetail = computed(() => {
       }
       
       .value {
-        font-size: 36rpx;
+  font-size: 36rpx;
         font-weight: bold;
       }
     }
@@ -2246,5 +2289,45 @@ const groupedTagsForDetail = computed(() => {
       }
     }
   }
+}
+
+.auth-container {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: #fff;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 999;
+}
+
+.auth-content {
+  text-align: center;
+  padding: 30px;
+}
+
+.auth-title {
+  font-size: 20px;
+  font-weight: bold;
+  margin-bottom: 15px;
+  display: block;
+}
+
+.auth-desc {
+  font-size: 16px;
+  color: #666;
+  margin-bottom: 30px;
+  display: block;
+}
+
+.auth-button {
+  background-color: #07c160;
+  color: #fff;
+  padding: 12px 24px;
+  border-radius: 4px;
+  border: none;
 }
 </style>
