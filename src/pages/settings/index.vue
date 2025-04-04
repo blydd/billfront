@@ -198,19 +198,23 @@ const fetchTags = async () => {
       title: '加载中...'
     })
     
-    const [error, response] = await uni.request({
-      url: 'http://localhost:8080/api/tags',
-      method: 'GET',
-      data: {
-        userId: userId
-      }
+    const response = await new Promise((resolve, reject) => {
+      uni.request({
+        url: 'http://localhost:8080/api/tags',
+        method: 'GET',
+        data: {
+          userId: userId
+        },
+        success: (res) => {
+          resolve(res)
+        },
+        fail: (err) => {
+          reject(err)
+        }
+      })
     })
 
     uni.hideLoading()
-
-    if (error) {
-      throw error
-    }
 
     if (response.statusCode === 200 && response.data.code === 200) {
       categories.value = response.data.data || []
@@ -270,19 +274,23 @@ const editTag = async (tag) => {
       title: '加载中...'
     })
     
-    const [error, response] = await uni.request({
-      url: `http://localhost:8080/api/tags/${tag.id}`,
-      method: 'GET',
-      data: {
-        userId: userId
-      }
+    const response = await new Promise((resolve, reject) => {
+      uni.request({
+        url: `http://localhost:8080/api/tags/${tag.id}`,
+        method: 'GET',
+        data: {
+          userId: userId
+        },
+        success: (res) => {
+          resolve(res)
+        },
+        fail: (err) => {
+          reject(err)
+        }
+      })
     })
 
     uni.hideLoading()
-
-    if (error) {
-      throw error
-    }
 
     if (response.statusCode === 200 && response.data.code === 200) {
       currentTag.value = tag
@@ -392,19 +400,23 @@ const deleteTag = async (tag) => {
       title: '删除中...'
     })
 
-    const [error, response] = await uni.request({
-      url: `http://localhost:8080/api/tags/${tag.id}`,
-      method: 'DELETE',
-      data: {
-        userId: userId
-      }
+    const response = await new Promise((resolve, reject) => {
+      uni.request({
+        url: `http://localhost:8080/api/tags/${tag.id}`,
+        method: 'DELETE',
+        data: {
+          userId: userId
+        },
+        success: (res) => {
+          resolve(res)
+        },
+        fail: (err) => {
+          reject(err)
+        }
+      })
     })
 
     uni.hideLoading()
-
-    if (error) {
-      throw error
-    }
 
     if (response.statusCode === 200 && response.data.code === 200) {
       uni.showToast({
@@ -493,22 +505,26 @@ const saveTag = async () => {
       'http://localhost:8080/api/tags'
     const method = currentTag.value ? 'PUT' : 'POST'
     
-    const [error, response] = await uni.request({
-      url,
-      method,
-      data: {
-        userId: userId,
-        name: tagForm.value.name,
-        inoutType: tagForm.value.inoutType,
-        tagType: tagForm.value.tagType,
-        accountType: tagForm.value.accountType,
-      }
+    const response = await new Promise((resolve, reject) => {
+      uni.request({
+        url,
+        method,
+        data: {
+          userId: userId,
+          name: tagForm.value.name,
+          inoutType: tagForm.value.inoutType,
+          tagType: tagForm.value.tagType,
+          accountType: tagForm.value.accountType,
+        },
+        success: (res) => {
+          resolve(res)
+        },
+        fail: (err) => {
+          reject(err)
+        }
+      })
     })
     
-    if (error) {
-      throw error
-    }
-
     if (response.statusCode === 200 && response.data.code === 200) {
       uni.showToast({
         title: currentTag.value ? '更新成功' : '添加成功',
