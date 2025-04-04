@@ -398,6 +398,7 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { onLoad } from '@dcloudio/uni-app'
+import { API } from '@/config/index.js'
 
 // 当前选择的日期
 const currentDate = ref(formatDefaultDate())
@@ -528,7 +529,7 @@ const queryTags = async () => {
   try {
     const response = await new Promise((resolve, reject) => {
       uni.request({
-        url: '/api/tags',  // 正确的标签列表接口
+        url: API.TAGS.LIST,
         method: 'GET',
         success: (res) => {
           resolve(res)
@@ -610,7 +611,7 @@ const getFirstChar = (item) => {
 const queryBills = async () => {
   try {
     const params = {
-      userId: 1, // 这里暂时写死，实际应该从用户登录信息中获取
+      userId: 1,
       month: currentDate.value,
       accountType: selectedAccountType.value === '储蓄账户' ? 1 :
                   selectedAccountType.value === '信用账户' ? 2 : undefined,
@@ -621,7 +622,7 @@ const queryBills = async () => {
 
     const response = await new Promise((resolve, reject) => {
       uni.request({
-        url: '/api/bills/query',
+        url: API.BILLS.QUERY,
         method: 'POST',
         data: params,
         header: {
@@ -894,7 +895,7 @@ const saveBill = async () => {
   try {
     const response = await new Promise((resolve, reject) => {
       uni.request({
-        url: '/api/bills',
+        url: API.BILLS.CREATE,
         method: 'POST',
         data: {
           amount: parseFloat(billForm.value.amount),
@@ -1087,7 +1088,7 @@ const showBillDetail = async (bill) => {
     
     const response = await new Promise((resolve, reject) => {
       uni.request({
-        url: `/api/bills/${bill.id}`,
+        url: API.BILLS.DETAIL(bill.id),
         method: 'GET',
         success: (res) => {
           resolve(res)
@@ -1195,7 +1196,7 @@ const updateBill = async () => {
     
     const response = await new Promise((resolve, reject) => {
       uni.request({
-        url: `/api/bills/${billDetail.value.id}`,
+        url: API.BILLS.UPDATE(billDetail.value.id),
         method: 'PUT',
         data: {
           amount: parseFloat(billDetail.value.amount),
@@ -1259,7 +1260,7 @@ const performDelete = async () => {
     
     const response = await new Promise((resolve, reject) => {
       uni.request({
-        url: `/api/bills/${billDetail.value.id}`,
+        url: API.BILLS.DELETE(billDetail.value.id),
         method: 'DELETE',
         success: (res) => {
           resolve(res)
