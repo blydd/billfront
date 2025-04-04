@@ -3,26 +3,9 @@ export default {
   globalData: {
     isFirstLaunch: true
   },
-  onLaunch: function() {
+  onLaunch() {
     console.log('App Launch')
-    // 初始化请求拦截器
     this.initRequestInterceptor()
-    // 直接检查授权状态
-    const token = uni.getStorageSync('token')
-    if (!token) {
-      console.log('未找到token，需要授权登录')
-      // 延迟一下再调用授权，确保页面已经准备好
-      setTimeout(() => {
-        this.getUserInfo().then(userInfo => {
-          if (userInfo) {
-            this.login(userInfo)
-          }
-        }).catch(error => {
-          console.error('授权失败:', error)
-          uni.exitMiniProgram()
-        })
-      }, 500)
-    }
   },
   onShow: async function() {
     console.log('App Show')
@@ -31,89 +14,46 @@ export default {
     console.log('App Hide')
   },
   methods: {
-    // 初始化请求拦截器
     initRequestInterceptor() {
-      console.log('初始化请求拦截器')
+      const requestTasks = new Set()
+      
       uni.addInterceptor('request', {
-        invoke(options) {
-          // 获取token
-          const token = uni.getStorageSync('token')
+        invoke(args) {
+          // 不需要token的接口列表
+          const whiteList = ['/api/user/login']
+          const needToken = !whiteList.some(path => args.url.includes(path))
           
-          // 如果没有token，直接跳转到授权
-          if (!token) {
-            // 清除可能存在的过期数据
-            uni.removeStorageSync('token')
-            uni.removeStorageSync('userInfo')
-            uni.removeStorageSync('userId')
-            
-            // 获取当前页面路径
-            const pages = getCurrentPages()
-            const currentPage = pages[pages.length - 1]
-            const currentPath = currentPage ? currentPage.route : ''
-            
-            // 如果不是在授权页面，则跳转到授权
-            if (currentPath !== 'pages/auth/index') {
-              uni.redirectTo({
+          if (needToken) {
+            const token = uni.getStorageSync('token')
+            if (!token) {
+              uni.reLaunch({
                 url: '/pages/auth/index'
               })
+              return false
             }
-            return false // 阻止请求继续执行
+            args.header = {
+              ...args.header,
+              'Authorization': `Bearer ${token}`
+            }
           }
-
-          // 添加token到请求头
-          options.header = {
-            ...options.header,
-            'Authorization': token
-          }
-          return options
+          requestTasks.add(args)
         },
-        success(response) {
-          // 处理401错误或其他失败情况
-          if (response.statusCode === 401 || response.data?.code === 401) {
-            // 清除token等数据
-            uni.removeStorageSync('token')
-            uni.removeStorageSync('userInfo')
-            uni.removeStorageSync('userId')
-            
-            // 显示提示
-            uni.showModal({
-              title: '提示',
-              content: '登录已过期，请重新授权',
-              showCancel: false,
-              success: () => {
-                // 获取当前页面路径
-                const pages = getCurrentPages()
-                const currentPage = pages[pages.length - 1]
-                const currentPath = currentPage ? currentPage.route : ''
-                
-                // 如果不是在授权页面，则跳转到授权
-                if (currentPath !== 'pages/auth/index') {
-                  uni.redirectTo({
-                    url: '/pages/auth/index'
-                  })
-                }
-              }
-            })
-            return false
-          }
-          
-          // 处理其他业务失败情况
-          if (response.data?.code !== 200) {
-            uni.showToast({
-              title: response.data?.message || '请求失败',
-              icon: 'none'
+        success(args) {
+          requestTasks.delete(args)
+          // 处理401未授权的情况
+          if (args.statusCode === 401) {
+            uni.clearStorageSync()
+            uni.reLaunch({
+              url: '/pages/auth/index'
             })
           }
-          return response
         },
         fail(err) {
           console.error('请求失败:', err)
-          // 显示错误提示
-          uni.showToast({
-            title: '网络请求失败',
-            icon: 'none'
-          })
-          return err
+          requestTasks.delete(err)
+        },
+        complete(res) {
+          requestTasks.delete(res)
         }
       })
     },

@@ -401,7 +401,7 @@
             <button class="cancel-btn" @click="closeDeleteConfirm">取消</button>
             <button class="delete-btn" @click="performDelete">删除</button>
           </view>
-        </view>
+    </view>
       </view>
     </template>
   </view>

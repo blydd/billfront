@@ -15,126 +15,129 @@
         <text class="button-text">微信授权登录</text>
       </button>
       
-      <text class="privacy-text">登录即表示您同意我们的<text class="link" @click="showPrivacy">隐私政策</text></text>
+      <text class="privacy-text">登录即表示您同意我们的<text class="link" @tap="showPrivacy">隐私政策</text></text>
     </view>
   </view>
 </template>
 
-<script setup>
-import { ref } from 'vue'
-
-// 处理授权登录
-const handleAuth = async () => {
-  try {
-    // 获取用户信息
-    const profileRes = await new Promise((resolve, reject) => {
-      uni.getUserProfile({
-        desc: '用于完善用户资料',
-        success: (res) => resolve(res),
-        fail: (err) => reject(err)
-      })
-    })
-    
-    console.log('获取用户信息成功:', profileRes.userInfo)
-    
-    // 显示加载提示
-    uni.showLoading({
-      title: '登录中...',
-      mask: true
-    })
-    
-    // 获取登录凭证
-    const loginRes = await new Promise((resolve, reject) => {
-      uni.login({
-        success: (res) => resolve(res),
-        fail: (err) => reject(err)
-      })
-    })
-    
-    console.log('获取登录凭证成功:', loginRes)
-    
-    if (!loginRes.code) {
-      throw new Error('获取登录凭证失败')
+<script>
+export default {
+  onLoad() {
+    // 检查是否已经有token，如果有则直接跳转
+    const token = uni.getStorageSync('token')
+    if (token) {
+      this.redirectToHome()
+      return
     }
-    
-    // 调用登录接口
-    const response = await new Promise((resolve, reject) => {
-      uni.request({
-        url: 'http://localhost:8080/api/user/login',
-        method: 'POST',
-        data: {
-          code: loginRes.code,
-          userInfo: profileRes.userInfo
-        },
-        success: (res) => resolve(res),
-        fail: (err) => reject(err)
-      })
-    })
-    
-    console.log('登录接口响应:', response)
-    
-    // 隐藏加载提示
-    uni.hideLoading()
-    
-    if (response.statusCode === 200 && response.data.code === 200) {
-      // 保存用户信息和token
-      const userData = response.data.data
-      uni.setStorageSync('userInfo', profileRes.userInfo)
-      uni.setStorageSync('userId', userData.userId)
-      uni.setStorageSync('token', userData.token)
-      
-      // 登录成功提示
-      uni.showToast({
-        title: '登录成功',
-        icon: 'success',
-        duration: 1500
-      })
-      
-      // 延迟跳转，让用户看到成功提示
-      setTimeout(() => {
-        // 返回之前的页面或跳转到首页
-        const pages = getCurrentPages()
-        if (pages.length > 1) {
-          uni.navigateBack()
-        } else {
-          uni.reLaunch({
-            url: '/pages/index/index'
-          })
+  },
+  
+  methods: {
+    // 处理授权登录
+    async handleAuth() {
+      try {
+        // 获取用户信息
+        const [profileError, profileRes] = await uni.getUserProfile({
+          desc: '用于完善会员资料',
+          lang: 'zh_CN'
+        }).catch(err => [err, null])
+        
+        if (profileError || !profileRes) {
+          throw new Error('获取用户信息失败')
         }
-      }, 1500)
-    } else {
-      throw new Error(response.data?.message || '登录失败')
-    }
-  } catch (error) {
-    // 隐藏加载提示
-    uni.hideLoading()
+        
+        const userInfo = profileRes.userInfo
+        console.log('获取用户信息成功:', userInfo)
+        
+        // 显示加载提示
+        uni.showLoading({
+          title: '登录中...',
+          mask: true
+        })
+        
+        // 获取登录凭证
+        const [loginError, loginRes] = await uni.login({
+          provider: 'weixin'
+        }).catch(err => [err, null])
+        
+        if (loginError || !loginRes || !loginRes.code) {
+          throw new Error('获取登录凭证失败')
+        }
+        
+        console.log('获取登录凭证成功:', loginRes)
+        
+        // 调用登录接口
+        const [requestError, response] = await uni.request({
+          url: 'http://localhost:8080/api/user/login',
+          method: 'POST',
+          data: {
+            code: loginRes.code,
+            userInfo: userInfo
+          },
+          header: {
+            'content-type': 'application/json'
+          }
+        }).catch(err => [err, null])
+        
+        uni.hideLoading()
+        
+        if (requestError) {
+          throw new Error('网络请求失败')
+        }
+        
+        if (response.statusCode !== 200 || response.data.code !== 200) {
+          throw new Error(response.data?.message || '登录失败')
+        }
+        
+        // 保存用户信息和token
+        const userData = response.data.data
+        uni.setStorageSync('userInfo', userInfo)
+        uni.setStorageSync('userId', userData.userId)
+        uni.setStorageSync('token', userData.token)
+        
+        // 显示成功提示
+        uni.showToast({
+          title: '登录成功',
+          icon: 'success',
+          duration: 1500
+        })
+        
+        // 延迟跳转
+        setTimeout(() => {
+          this.redirectToHome()
+        }, 1500)
+        
+      } catch (error) {
+        console.error('授权登录失败:', error)
+        uni.hideLoading()
+        uni.showToast({
+          title: error.message || '登录失败，请重试',
+          icon: 'none',
+          duration: 2000
+        })
+      }
+    },
     
-    console.error('授权登录失败:', error)
+    // 跳转到首页
+    redirectToHome() {
+      const pages = getCurrentPages()
+      if (pages.length > 1) {
+        uni.navigateBack()
+      } else {
+        uni.reLaunch({
+          url: '/pages/index/index'
+        })
+      }
+    },
     
-    // 显示错误提示
-    if (error.errMsg && error.errMsg.includes('getUserProfile:fail')) {
-      uni.showToast({
-        title: '您取消了授权，部分功能将无法使用',
-        icon: 'none',
-        duration: 2000
-      })
-    } else {
-      uni.showToast({
-        title: error.message || '登录失败，请重试',
-        icon: 'none',
-        duration: 2000
+    // 显示隐私政策
+    showPrivacy() {
+      uni.showModal({
+        title: '隐私政策',
+        content: '我们会依法保护您的个人信息安全...',
+        showCancel: false
       })
     }
   }
-}
-
-// 显示隐私政策
-const showPrivacy = () => {
-  uni.showModal({
-    title: '隐私政策',
-    content: '我们会依法保护您的个人信息安全...',
-    showCancel: false
-  })
 }
 </script>
 
