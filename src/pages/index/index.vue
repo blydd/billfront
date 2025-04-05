@@ -1434,6 +1434,7 @@ const getCurrentTagList = computed(() => {
   min-height: 100vh;
   background-color: #f5f5f5;
   padding-bottom: 100rpx;
+  padding-top: calc(88rpx + var(--status-bar-height));
 }
 
 .custom-nav {
@@ -1442,41 +1443,52 @@ const getCurrentTagList = computed(() => {
   left: 0;
   right: 0;
   height: 88rpx;
-  background-color: #F8F8F8;
+  background-color: #4CAF50;
   display: flex;
   align-items: center;
   justify-content: center;
   z-index: 999;
   padding-top: var(--status-bar-height);
-}
-
-.nav-title {
-  font-size: 32rpx;
-  font-weight: 500;
-  color: #333;
+  
+  .nav-title {
+    font-size: 32rpx;
+    font-weight: 500;
+    color: #fff;
+  }
 }
 
 .header {
   background-color: #4CAF50;
   padding: 20rpx 30rpx 30rpx;
   color: #fff;
+  position: fixed;
+  top: calc(88rpx + var(--status-bar-height));
+  left: 0;
+  right: 0;
+  z-index: 998;
   
   .month-picker {
     text-align: center;
-    padding: 20rpx 0;
+    padding: 10rpx 0;
+    margin-bottom: 10rpx;
     
     .month-switcher {
-  display: flex;
-  align-items: center;
-  justify-content: center;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background-color: rgba(255, 255, 255, 0.1);
+      border-radius: 16rpx;
+      padding: 10rpx;
+      margin: 0 auto;
+      width: fit-content;
       
       .arrow {
-        width: 60rpx;
-        height: 60rpx;
+        width: 50rpx;
+        height: 50rpx;
         display: flex;
         align-items: center;
         justify-content: center;
-        background-color: rgba(255, 255, 255, 0.1);
+        background-color: rgba(255, 255, 255, 0.2);
         border-radius: 50%;
         margin: 0 20rpx;
         
@@ -1759,20 +1771,15 @@ const getCurrentTagList = computed(() => {
 }
 
 .bill-list {
-  flex: 1;
+  margin-top: calc(88rpx + var(--status-bar-height) + 440rpx);
+  height: calc(100vh - 88rpx - var(--status-bar-height) - 440rpx - 100rpx);
   padding: 20rpx;
-  
-  .debug-info {
-    background-color: #fff3cd;
-    color: #856404;
-    padding: 20rpx;
-    margin-bottom: 20rpx;
-    border-radius: 8rpx;
-    font-size: 24rpx;
-  }
+  background-color: #f5f5f5;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
   
   .date-group {
-    margin-bottom: 30rpx;
+    margin-bottom: 20rpx;
     
     .date-header {
       display: flex;
@@ -1803,110 +1810,6 @@ const getCurrentTagList = computed(() => {
       background-color: #fff;
       border-radius: 12rpx;
       overflow: hidden;
-      
-      .bill-item {
-        display: flex;
-        justify-content: space-between;
-        padding: 20rpx;
-        border-bottom: 1px solid #f5f5f5;
-        
-        &:last-child {
-          border-bottom: none;
-        }
-        
-        .left {
-          display: flex;
-          align-items: center;
-          flex: 1;
-          overflow: hidden;
-          
-          .icon {
-            width: 80rpx;
-            height: 80rpx;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin-right: 20rpx;
-            flex-shrink: 0;
-            
-            &.expense {
-              background-color: #f56c6c;
-            }
-            
-            &.income {
-              background-color: #67c23a;
-            }
-            
-            .icon-text {
-              color: #fff;
-              font-size: 28rpx;
-              font-weight: bold;
-            }
-          }
-          
-          .info {
-            flex: 1;
-            overflow: hidden;
-            
-            .title-row {
-              display: flex;
-              justify-content: space-between;
-              align-items: center;
-              margin-bottom: 8rpx;
-              
-              .title {
-                font-size: 28rpx;
-                color: #333;
-                flex: 1;
-                overflow: hidden;
-                text-overflow: ellipsis;
-                white-space: nowrap;
-              }
-              
-              .time {
-                font-size: 24rpx;
-                color: #999;
-                margin-left: 10rpx;
-              }
-            }
-            
-            .tags {
-              display: flex;
-              flex-wrap: wrap;
-              
-              .tag {
-                font-size: 22rpx;
-                color: #666;
-                background-color: #f5f5f5;
-                padding: 4rpx 12rpx;
-                border-radius: 6rpx;
-                margin-right: 10rpx;
-                margin-bottom: 6rpx;
-              }
-            }
-          }
-        }
-        
-        .right {
-          display: flex;
-          align-items: center;
-          margin-left: 20rpx;
-          
-          .amount {
-            font-size: 32rpx;
-            font-weight: bold;
-            
-            &.expense {
-              color: #f56c6c;
-            }
-            
-            &.income {
-              color: #67c23a;
-            }
-          }
-        }
-      }
     }
   }
   
@@ -2295,9 +2198,96 @@ const getCurrentTagList = computed(() => {
 .bill-item {
   cursor: pointer;
   transition: background-color 0.3s ease;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20rpx;
+  border-bottom: 1px solid #f5f5f5;
+  
+  &:last-child {
+    border-bottom: none;
+  }
   
   &:active {
     background-color: #f9f9f9;
+  }
+  
+  .left {
+    display: flex;
+    align-items: center;
+    
+    .icon {
+      width: 80rpx;
+      height: 80rpx;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-right: 20rpx;
+      
+      &.expense {
+        background-color: #EE6666;
+      }
+      
+      &.income {
+        background-color: #91CC75;
+      }
+      
+      .icon-text {
+        color: #fff;
+        font-size: 28rpx;
+        font-weight: bold;
+      }
+    }
+    
+    .info {
+      .title-row {
+        display: flex;
+        align-items: center;
+        margin-bottom: 8rpx;
+        
+        .title {
+          font-size: 28rpx;
+          color: #333;
+          margin-right: 16rpx;
+        }
+        
+        .time {
+          font-size: 24rpx;
+          color: #999;
+        }
+      }
+      
+      .tags {
+        display: flex;
+        flex-wrap: wrap;
+        
+        .tag {
+          font-size: 22rpx;
+          color: #666;
+          background-color: #f5f5f5;
+          padding: 4rpx 12rpx;
+          border-radius: 20rpx;
+          margin-right: 12rpx;
+          margin-bottom: 8rpx;
+        }
+      }
+    }
+  }
+  
+  .right {
+    .amount {
+      font-size: 32rpx;
+      font-weight: 500;
+      
+      &.expense {
+        color: #EE6666;
+      }
+      
+      &.income {
+        color: #91CC75;
+      }
+    }
   }
 }
 
