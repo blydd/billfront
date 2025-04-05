@@ -46,21 +46,31 @@
             </view>
           </view>
           
-          <scroll-view scroll-y class="tag-scroll">
-            <view class="tag-group" v-for="(group, index) in filteredGroupedTags" :key="index">
-              <view class="group-title">{{getTagTypeLabel(group.tagType)}}</view>
-              <view class="tag-list">
-                <view 
-                  v-for="(tag, tagIndex) in group.items" 
-                  :key="tagIndex" 
-                  :class="['tag-item', selectedTags.includes(tag.id) ? 'active' : '']"
-                  @click="selectTag(tag.id)"
-                >
-                  <view class="tag-icon" :class="[`tag-type-${tag.inoutType}`, `tag-style-${tag.tagType}`]">
-                    <text class="icon-text">{{tag.name.substring(0, 1)}}</text>
-                  </view>
-                  <text class="tag-name">{{tag.name}}</text>
+          <!-- 标签类型选择 -->
+          <view class="tag-type-list">
+            <view 
+              v-for="(group, index) in filteredGroupedTags" 
+              :key="index"
+              :class="['tag-type-item', selectedTagType === group.tagType ? 'active' : '']"
+              @click="toggleTagType(group.tagType)"
+            >
+              <text class="tag-type-name">{{getTagTypeLabel(group.tagType)}}</text>
+            </view>
+          </view>
+          
+          <!-- 具体标签列表，只在选中标签类型时显示 -->
+          <scroll-view v-if="selectedTagType" scroll-y class="tag-scroll">
+            <view class="tag-list">
+              <view 
+                v-for="(tag, tagIndex) in getCurrentTagList" 
+                :key="tagIndex" 
+                :class="['tag-item', selectedTags.includes(tag.id) ? 'active' : '']"
+                @click="selectTag(tag.id)"
+              >
+                <view class="tag-icon" :class="[`tag-type-${tag.inoutType}`, `tag-style-${tag.tagType}`]">
+                  <text class="icon-text">{{tag.name.substring(0, 1)}}</text>
                 </view>
+                <text class="tag-name">{{tag.name}}</text>
               </view>
             </view>
           </scroll-view>
@@ -1400,6 +1410,21 @@ watch(isAuthorized, (newVal) => {
     uni.showTabBar()
   }
 }, { immediate: true })
+
+// 新增：当前选中的标签类型
+const selectedTagType = ref(null)
+
+// 新增：切换标签类型
+const toggleTagType = (tagType) => {
+  selectedTagType.value = selectedTagType.value === tagType ? null : tagType
+}
+
+// 新增：获取当前标签类型下的标签列表
+const getCurrentTagList = computed(() => {
+  if (!selectedTagType.value) return []
+  const group = filteredGroupedTags.value.find(g => g.tagType === selectedTagType.value)
+  return group ? group.items : []
+})
 </script>
 
 <style lang="scss">
@@ -1502,6 +1527,27 @@ watch(isAuthorized, (newVal) => {
           background-color: #fff;
           color: #4CAF50;
           box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.1);
+        }
+      }
+    }
+    
+    .tag-type-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 16rpx;
+      padding: 20rpx 0;
+      
+      .tag-type-item {
+        padding: 12rpx 24rpx;
+        background-color: #f5f5f5;
+        border-radius: 30rpx;
+        font-size: 24rpx;
+        color: #666;
+        transition: all 0.3s ease;
+        
+        &.active {
+          background-color: #4CAF50;
+          color: #fff;
         }
       }
     }
