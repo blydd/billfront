@@ -74,18 +74,6 @@
               </view>
             </view>
           </scroll-view>
-          
-          <view class="all-tags-btn">
-            <view 
-              :class="['tag-item', 'all-tag', selectedTags.length === 0 ? 'active' : '']"
-              @click="selectTag('all')"
-            >
-              <view class="tag-icon all-icon">
-                <text class="icon-text">全</text>
-              </view>
-              <text class="tag-name">全部</text>
-            </view>
-          </view>
         </view>
         
         <!-- 账户类型筛选和记账按钮 -->
@@ -416,7 +404,7 @@
             <button class="cancel-btn" @click="closeDeleteConfirm">取消</button>
             <button class="delete-btn" @click="performDelete">删除</button>
           </view>
-    </view>
+        </view>
       </view>
     </template>
   </view>
@@ -583,17 +571,12 @@ const queryTags = async () => {
 
 // 选择标签
 const selectTag = (tagId) => {
-  if (tagId === 'all') {
-    // 选择"全部"，清空已选标签
-    selectedTags.value = []
+  // 如果已经选中了这个标签，则取消选中
+  if (selectedTags.value.includes(tagId)) {
+    selectedTags.value = selectedTags.value.filter(id => id !== tagId)
   } else {
-    // 如果已经选中了这个标签，则取消选中
-    if (selectedTags.value.includes(tagId)) {
-      selectedTags.value = selectedTags.value.filter(id => id !== tagId)
-    } else {
-      // 否则添加到已选标签中
-      selectedTags.value.push(tagId)
-    }
+    // 否则添加到已选标签中
+    selectedTags.value.push(tagId)
   }
   
   queryBills() // 选择标签后重新查询
@@ -1429,12 +1412,346 @@ const getCurrentTagList = computed(() => {
 
 <style lang="scss">
 .container {
-  display: flex;
-  flex-direction: column;
   min-height: 100vh;
+  width: 100%;
+  box-sizing: border-box;
+  overflow-x: hidden;
   background-color: #f5f5f5;
-  padding-bottom: 100rpx;
-  padding-top: calc(88rpx + var(--status-bar-height));
+  
+  .content-wrapper {
+    width: 100%;
+    box-sizing: border-box;
+    overflow-x: hidden;
+    
+    .header {
+      width: 100%;
+      box-sizing: border-box;
+      padding: 0 30rpx;
+      
+      .month-picker {
+        width: 100%;
+        box-sizing: border-box;
+        
+        .month-switcher {
+          width: 100%;
+          box-sizing: border-box;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          
+          .picker-text {
+            flex: 0 1 auto;
+            min-width: 0;
+            text-align: center;
+          }
+        }
+      }
+      
+      .tag-filter {
+        padding: 16rpx;
+        background-color: #fff;
+        border-radius: 16rpx;
+        margin: 16rpx;
+        position: relative;
+        width: auto;
+        box-sizing: border-box;
+        
+        .type-tabs {
+          display: flex;
+          margin-bottom: 16rpx;
+          background-color: #f5f5f5;
+          border-radius: 12rpx;
+          padding: 4rpx;
+          
+          .tab-item {
+            flex: 1;
+            height: 60rpx;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 26rpx;
+            color: #666;
+            border-radius: 8rpx;
+            transition: all 0.3s ease;
+            
+            &.active {
+              background-color: #fff;
+              color: #4CAF50;
+              box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.1);
+            }
+          }
+        }
+        
+        .tag-type-list {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 12rpx;
+          padding: 12rpx 0;
+          
+          .tag-type-item {
+            padding: 8rpx 20rpx;
+            background-color: #f5f5f5;
+            border-radius: 24rpx;
+            font-size: 24rpx;
+            color: #666;
+            transition: all 0.3s ease;
+            
+            &.active {
+              background-color: #4CAF50;
+              color: #fff;
+            }
+          }
+        }
+        
+        .tag-scroll {
+          max-height: 240rpx;
+          overflow-y: auto;
+          
+          &::-webkit-scrollbar {
+            width: 4rpx;
+          }
+          
+          &::-webkit-scrollbar-thumb {
+            background-color: #ddd;
+            border-radius: 2rpx;
+          }
+          
+          .tag-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12rpx;
+            padding: 12rpx 0;
+            width: 100%;
+            box-sizing: border-box;
+            
+            .tag-item {
+              width: 22%;
+              display: flex;
+              flex-direction: column;
+              align-items: center;
+              padding: 8rpx 0;
+              border-radius: 8rpx;
+              transition: all 0.3s ease;
+              box-sizing: border-box;
+              
+              &.active {
+                background-color: #f5f5f5;
+              }
+              
+              .tag-icon {
+                width: 56rpx;
+                height: 56rpx;
+                border-radius: 50%;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                margin-bottom: 6rpx;
+                
+                &.tag-type-1 {
+                  background-color: #EE6666; // 支出
+                  
+                  &.tag-style-1 {
+                    background: linear-gradient(135deg, #FF9800, #EE6666); // 支付方式
+                  }
+                  
+                  &.tag-style-2 {
+                    background: linear-gradient(135deg, #EE6666, #9C27B0); // 账单类型
+                  }
+                  
+                  &.tag-style-3 {
+                    background: linear-gradient(135deg, #EE6666, #3F51B5); // 归属人
+                  }
+                }
+                
+                &.tag-type-2 {
+                  background-color: #91CC75; // 收入
+                  
+                  &.tag-style-1 {
+                    background: linear-gradient(135deg, #4CAF50, #91CC75); // 支付方式
+                  }
+                  
+                  &.tag-style-2 {
+                    background: linear-gradient(135deg, #91CC75, #2196F3); // 账单类型
+                  }
+                  
+                  &.tag-style-3 {
+                    background: linear-gradient(135deg, #91CC75, #00BCD4); // 归属人
+                  }
+                }
+                
+                &.tag-type-3 {
+                  background-color: #73C0DE; // 不计入收支
+                  
+                  &.tag-style-1 {
+                    background: linear-gradient(135deg, #00BCD4, #73C0DE); // 支付方式
+                  }
+                  
+                  &.tag-style-2 {
+                    background: linear-gradient(135deg, #73C0DE, #3F51B5); // 账单类型
+                  }
+                }
+                
+                .icon-text {
+                  color: #fff;
+                  font-size: 24rpx;
+                  font-weight: bold;
+                }
+              }
+              
+              .tag-name {
+                font-size: 22rpx;
+                color: #333;
+                max-width: 100%;
+                overflow: hidden;
+                text-overflow: ellipsis;
+                white-space: nowrap;
+                text-align: center;
+              }
+            }
+          }
+        }
+      }
+      
+      .filter-row {
+        width: 100%;
+        box-sizing: border-box;
+        display: flex;
+        justify-content: space-between;
+        
+        .account-type-filter {
+          flex: 1;
+          min-width: 0;
+          display: flex;
+          gap: 12rpx;
+          
+          .account-type-btn {
+            flex: 0 1 auto;
+            min-width: 0;
+          }
+        }
+      }
+      
+      .total-amount {
+        width: 100%;
+        box-sizing: border-box;
+        display: flex;
+        justify-content: space-between;
+        
+        .amount-item {
+          flex: 1;
+          min-width: 0;
+          text-align: center;
+        }
+      }
+    }
+    
+    .bill-list {
+      width: 100%;
+      box-sizing: border-box;
+      
+      .date-group {
+        width: 100%;
+        box-sizing: border-box;
+        
+        .date-header {
+          width: 100%;
+          box-sizing: border-box;
+          display: flex;
+          justify-content: space-between;
+          
+          .daily-total {
+            flex: 0 1 auto;
+            min-width: 0;
+          }
+        }
+        
+        .bill-items {
+          width: 100%;
+          box-sizing: border-box;
+          
+          .bill-item {
+            width: 100%;
+            box-sizing: border-box;
+            display: flex;
+            justify-content: space-between;
+            
+            .left {
+              flex: 1;
+              min-width: 0;
+              display: flex;
+              align-items: center;
+              
+              .info {
+                flex: 1;
+                min-width: 0;
+                
+                .title-row {
+                  width: 100%;
+                  display: flex;
+                  justify-content: space-between;
+                  
+                  .title {
+                    flex: 1;
+                    min-width: 0;
+                    overflow: hidden;
+                    text-overflow: ellipsis;
+                    white-space: nowrap;
+                  }
+                  
+                  .time {
+                    flex: 0 0 auto;
+                  }
+                }
+                
+                .tags {
+                  width: 100%;
+                  display: flex;
+                  flex-wrap: wrap;
+                  gap: 8rpx;
+                  
+                  .tag {
+                    flex: 0 1 auto;
+                    min-width: 0;
+                  }
+                }
+              }
+            }
+            
+            .right {
+              flex: 0 0 auto;
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
+// 弹窗样式
+.modal-wrapper {
+  width: 100%;
+  box-sizing: border-box;
+  
+  .bill-modal {
+    width: 90%;
+    max-width: 600rpx;
+    box-sizing: border-box;
+    
+    .modal-content {
+      width: 100%;
+      box-sizing: border-box;
+      
+      .form-item {
+        width: 100%;
+        box-sizing: border-box;
+        
+        input {
+          width: 100%;
+          box-sizing: border-box;
+        }
+      }
+    }
+  }
 }
 
 .custom-nav {
