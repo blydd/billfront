@@ -14,5 +14,8 @@ export const API = {
   // 标签相关接口
   TAGS: {
     LIST: `${BASE_URL}/api/tags`,
+    CREATE: `${BASE_URL}/api/tags`,
+    UPDATE: (id) => `${BASE_URL}/api/tags/${id}`,
+    DELETE: (id) => `${BASE_URL}/api/tags/${id}`,
   }
 } 
