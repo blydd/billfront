@@ -1416,7 +1416,7 @@ const getCurrentTagList = computed(() => {
   width: 100%;
   box-sizing: border-box;
   overflow-x: hidden;
-  background-color: #f5f5f5;
+  background-color: rgb(189, 219, 189);
   
   .content-wrapper {
     width: 100%;
@@ -1475,7 +1475,7 @@ const getCurrentTagList = computed(() => {
             transition: all 0.3s ease;
             
             &.active {
-              background-color: #fff;
+              background-color: rgb(152, 226, 147);
               color: #4CAF50;
               box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.1);
             }
@@ -1497,7 +1497,7 @@ const getCurrentTagList = computed(() => {
             transition: all 0.3s ease;
             
             &.active {
-              background-color: #4CAF50;
+              background-color: rgb(152, 226, 147);
               color: #fff;
             }
           }
@@ -1535,7 +1535,7 @@ const getCurrentTagList = computed(() => {
               box-sizing: border-box;
               
               &.active {
-                background-color: #f5f5f5;
+                background-color: rgb(152, 226, 147);
               }
               
               .tag-icon {
@@ -1815,7 +1815,7 @@ const getCurrentTagList = computed(() => {
         }
         
         &:active {
-          background-color: rgba(255, 255, 255, 0.2);
+          background-color: rgb(152, 226, 147);
         }
       }
       
@@ -1855,7 +1855,7 @@ const getCurrentTagList = computed(() => {
         &.active {
           background-color: #fff;
           color: #4CAF50;
-          box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.1);
+          box-shadow: 0 2rpx 8rpx rgb(152, 226, 147);
         }
       }
     }
@@ -1875,7 +1875,7 @@ const getCurrentTagList = computed(() => {
         transition: all 0.3s ease;
         
         &.active {
-          background-color: #4CAF50;
+          background-color: rgb(152, 226, 147);
           color: #fff;
         }
       }
@@ -1926,7 +1926,7 @@ const getCurrentTagList = computed(() => {
       transition: all 0.3s ease;
       
       &.active {
-        background-color: #f5f5f5;
+        background-color: rgb(152, 226, 147);
       }
       
       .tag-icon {
@@ -2038,7 +2038,7 @@ const getCurrentTagList = computed(() => {
         font-size: 24rpx;
         
         &.active {
-          background-color: #fff;
+          background-color: rgb(152, 226, 147);
           color: #4CAF50;
         }
       }
@@ -2247,7 +2247,7 @@ const getCurrentTagList = computed(() => {
             }
             
             &.active {
-              background-color: #4CAF50;
+              background-color: rgb(152, 226, 147);
               color: #fff;
             }
           }
@@ -2297,7 +2297,7 @@ const getCurrentTagList = computed(() => {
             transition: all 0.3s ease;
             
             &.active {
-              background-color: #f5f5f5;
+              background-color: rgb(152, 226, 147);
             }
             
             .tag-icon {
@@ -2526,7 +2526,7 @@ const getCurrentTagList = computed(() => {
   }
   
   &:active {
-    background-color: #f9f9f9;
+    background-color: rgb(152, 226, 147);
   }
   
   .left {
@@ -2673,7 +2673,7 @@ const getCurrentTagList = computed(() => {
         }
         
         &:active {
-          background-color: #f5f5f5;
+          background-color: rgb(152, 226, 147);
         }
       }
     }
