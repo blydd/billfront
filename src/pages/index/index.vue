@@ -173,16 +173,16 @@
         </view>
       </scroll-view>
 
-      <!-- 添加账单弹框 -->
+      <!-- 记账 添加账单弹框 -->
       <view v-if="showModal" class="modal-wrapper">
         <view class="modal-mask" @click="closeModal"></view>
         <view class="bill-modal" @click.stop>
-          <view class="modal-header">
-            <text class="title">新增账单</text>
+          <!-- <view class="modal-header">
+            <text class="title">新增账单</text> 
             <view class="close-btn" @click="closeModal">
               <text class="close-icon">×</text>
             </view>
-          </view>
+          </view> -->
           
           <view class="modal-content">
             <view class="form-item">
@@ -235,7 +235,7 @@
                       @click="toggleTag(tag.id)"
                     >
                       <view class="tag-icon" :class="[`tag-type-${tag.inoutType}`, `tag-style-${tag.tagType}`]">
-                        <text class="icon-text">{{tag.name.substring(0, 1)}}</text>
+                        <text class="icon-text">{{tag.name.substring(0, 2)}}</text>
                       </view>
                       <text class="tag-name">{{tag.name}}</text>
                     </view>
@@ -897,13 +897,13 @@ const saveBill = async () => {
     return
   }
   
-  if (!billForm.value.remark) {
-    uni.showToast({
-      title: '请输入描述',
-      icon: 'none'
-    })
-    return
-  }
+  // if (!billForm.value.remark) {
+  //   uni.showToast({
+  //     title: '请输入描述',
+  //     icon: 'none'
+  //   })
+  //   return
+  // }
   
   if (billForm.value.tags.length === 0) {
     uni.showToast({
@@ -1732,6 +1732,7 @@ const getCurrentTagList = computed(() => {
 
 // 弹窗样式
 .modal-wrapper {
+
   width: 100%;
   box-sizing: border-box;
   
