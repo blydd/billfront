@@ -1,7 +1,7 @@
 {
   "name": "billfront",
   "version": "1.0.0",
-  "description": "账单管理系统前端",
+  "description": "标签账单前端",
   "scripts": {
     "dev": "uni",
     "build": "uni build",
@@ -33,6 +33,7 @@
     "@vue/runtime-core": "3.2.47",
     "@vue/runtime-dom": "3.2.47",
     "@vue/shared": "3.2.47",
+    "dayjs": "^1.11.13",
     "vue": "3.4.21",
     "vue-i18n": "9.14.3"
   },

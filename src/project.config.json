@@ -44,7 +44,7 @@
   "compileType": "miniprogram",
   "libVersion": "3.0.2",
   "appid": "wxad964e84378db247",
-  "projectname": "账单管理系统",
+  "projectname": "标签账单",
   "debugOptions": {
     "hidedInDevtools": []
   },
