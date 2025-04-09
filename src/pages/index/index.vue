@@ -150,7 +150,10 @@
                   <view class="info">
                     <view class="title-row">
                       <text class="time">{{formatTime(item.billDate)}}</text>
-                      <text class="time">'  '</text>
+              
+                      <text class="title">{{'   '}}</text>
+       
+                      
                       <text class="title">{{item.remark || ''}}</text>
                     </view>
                     <view class="tags">
@@ -187,7 +190,7 @@
           <view class="modal-content">
             <view class="form-item">
               <text class="label">金额</text>
-              <input type="digit" v-model="billForm.amount" placeholder="请输入金额" />
+              <input type="digit" ref="billAmountRef" v-model="billForm.amount" placeholder="请输入金额" />
             </view>
             
             <view class="form-item">
@@ -420,6 +423,12 @@ import { API } from '@/config/index.js'
 // 当前选择的日期
 const currentDate = ref(formatDefaultDate())
 
+const billAmountRef = ref(null);
+onMounted(() => {
+  if (billAmountRef.value) {
+    billAmountRef.value.focus();
+  }
+});
 // 账单数据
 const billList = ref([])
 
