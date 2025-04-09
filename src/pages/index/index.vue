@@ -3,7 +3,7 @@
     <!-- 授权按钮 -->
     <view v-if="!isAuthorized" class="auth-container">
       <view class="auth-content">
-        <text class="auth-title">欢迎使用记账小程序</text>
+        <text class="auth-title">欢迎使用标签记账</text>
         <text class="auth-desc">需要获取您的用户信息</text>
         <button class="auth-button" @click="handleAuth">点击授权登录</button>
       </view>
@@ -67,10 +67,11 @@
                 :class="['tag-item', selectedTags.includes(tag.id) ? 'active' : '']"
                 @click="selectTag(tag.id)"
               >
+                <!-- 标签图标 -->
                 <view class="tag-icon" :class="[`tag-type-${tag.inoutType}`, `tag-style-${tag.tagType}`]">
-                  <text class="icon-text">{{tag.name.substring(0, 1)}}</text>
+                  <text class="icon-text">{{tag.name.substring(0, 2)}}</text>
                 </view>
-                <text class="tag-name">{{tag.name}}</text>
+                <!-- <text class="tag-name">{{tag.name}}</text> -->
               </view>
             </view>
           </scroll-view>
@@ -1492,7 +1493,7 @@ const getCurrentTagList = computed(() => {
             padding: 8rpx 20rpx;
             background-color: #f5f5f5;
             border-radius: 24rpx;
-            font-size: 24rpx;
+            font-size: 14rpx;
             color: #666;
             transition: all 0.3s ease;
             
@@ -1504,7 +1505,7 @@ const getCurrentTagList = computed(() => {
         }
         
         .tag-scroll {
-          max-height: 240rpx;
+          max-height: 140rpx;
           overflow-y: auto;
           
           &::-webkit-scrollbar {
@@ -1525,11 +1526,11 @@ const getCurrentTagList = computed(() => {
             box-sizing: border-box;
             
             .tag-item {
-              width: 22%;
+              width: 15%;
               display: flex;
               flex-direction: column;
               align-items: center;
-              padding: 8rpx 0;
+              padding: 5rpx 0;
               border-radius: 8rpx;
               transition: all 0.3s ease;
               box-sizing: border-box;
@@ -1539,13 +1540,13 @@ const getCurrentTagList = computed(() => {
               }
               
               .tag-icon {
-                width: 56rpx;
-                height: 56rpx;
+                width: 40;
+                height: 40;
                 border-radius: 50%;
                 display: flex;
                 align-items: center;
                 justify-content: center;
-                margin-bottom: 6rpx;
+                margin-bottom: 3rpx;
                 
                 &.tag-type-1 {
                   background-color: #EE6666; // 支出
@@ -1593,7 +1594,7 @@ const getCurrentTagList = computed(() => {
                 
                 .icon-text {
                   color: #fff;
-                  font-size: 24rpx;
+                  font-size: 10;
                   font-weight: bold;
                 }
               }
@@ -1800,7 +1801,7 @@ const getCurrentTagList = computed(() => {
       width: fit-content;
       
       .arrow {
-        width: 50rpx;
+        width: 80rpx;
         height: 50rpx;
         display: flex;
         align-items: center;
@@ -1843,7 +1844,7 @@ const getCurrentTagList = computed(() => {
       
       .tab-item {
         flex: 1;
-        height: 70rpx;
+        height: 40rpx;
         display: flex;
         align-items: center;
   justify-content: center;
@@ -1863,11 +1864,13 @@ const getCurrentTagList = computed(() => {
     .tag-type-list {
       display: flex;
       flex-wrap: wrap;
-      gap: 16rpx;
-      padding: 20rpx 0;
+      gap: 56rpx;
+      padding: 0 0 0 0;
       
       .tag-type-item {
-        padding: 12rpx 24rpx;
+        padding: 5rpx 40rpx 10rpx 40rpx;
+        background-color: #f5f5f5;
+        border-radius: 30rpx;;
         background-color: #f5f5f5;
         border-radius: 30rpx;
         font-size: 24rpx;
@@ -1882,7 +1885,7 @@ const getCurrentTagList = computed(() => {
     }
     
     .tag-scroll {
-      max-height: 320rpx; /* 增加高度，能展示完整2行的标签 */
+      max-height: 250rpx; /* 增加高度，能展示完整2行的标签 */
       overflow-y: auto;
       
       &::-webkit-scrollbar {
@@ -1915,13 +1918,13 @@ const getCurrentTagList = computed(() => {
       flex-wrap: wrap;
       gap: 16rpx;
     }
-    
+    // 顶部标签区域标签样式
     .tag-item {
-      width: 22%;
+      width: 10%;
       display: flex;
       flex-direction: column;
       align-items: center;
-      padding: 10rpx 0;
+      padding: 6rpx 0;
       border-radius: 8rpx;
       transition: all 0.3s ease;
       
