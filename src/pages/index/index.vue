@@ -149,8 +149,9 @@
                   </view>
                   <view class="info">
                     <view class="title-row">
-                      <text class="title">{{item.remark || '未命名账单'}}</text>
                       <text class="time">{{formatTime(item.billDate)}}</text>
+                      <text class="time">'  '</text>
+                      <text class="title">{{item.remark || ''}}</text>
                     </view>
                     <view class="tags">
                       <text class="tag" v-for="(tag, tagIndex) in item.tags" :key="tagIndex">{{tag.name}}</text>
@@ -1708,11 +1709,12 @@ const getCurrentTagList = computed(() => {
                   width: 100%;
                   display: flex;
                   flex-wrap: wrap;
-                  gap: 8rpx;
+                  gap: 6rpx;
                   
                   .tag {
                     flex: 0 1 auto;
                     min-width: 0;
+
                   }
                 }
               }
@@ -2091,8 +2093,8 @@ const getCurrentTagList = computed(() => {
 }
 
 .bill-list {
-  margin-top: calc(88rpx + var(--status-bar-height) + 540rpx);
-  height: calc(100vh - 88rpx - var(--status-bar-height) - 440rpx - 100rpx);
+  margin-top: calc(88rpx + var(--status-bar-height) + 460rpx);
+  height: calc(100vh - 88rpx - var(--status-bar-height) - 440rpx);
   padding: 20rpx;
   background-color: #f5f5f5;
   overflow-y: auto;
@@ -2584,11 +2586,12 @@ const getCurrentTagList = computed(() => {
         
         .tag {
           font-size: 22rpx;
-          color: #666;
-          background-color: #f5f5f5;
+          color: #ffffff;
+          //背景色改为渐变色
+          background: rgb(222, 110, 106);
           padding: 4rpx 12rpx;
           border-radius: 20rpx;
-          margin-right: 12rpx;
+          margin-right: 10rpx;
           margin-bottom: 8rpx;
         }
       }
