@@ -1,53 +1,68 @@
 <template>
   <view class="container">
-    <view class="section">
-      <view class="section-header">
-        <text class="title">分类管理</text>
-        <text class="subtitle">点按以编辑或删除标签</text>
-      </view>
-      
-      <!-- 分类类型切换 -->
-      <view class="type-tabs">
-        <view 
-          v-for="type in ['支出', '收入', '不计入收支']" 
-          :key="type"
-          :class="['tab-item', activeType === getTypeValue(type) ? 'active' : '']"
-          @click="activeType = getTypeValue(type)"
-        >
-          <text>{{type}}</text>
+    <!-- 设置列表 -->
+    <view class="settings-list">
+      <view class="settings-item" @click="toggleDrawer">
+        <view class="item-left">
+          <text class="icon">🏷️</text>
+          <text class="title">分类管理</text>
         </view>
+        <text class="arrow" :class="{ 'arrow-down': isDrawerOpen }">></text>
       </view>
 
-      <!-- 分类列表 -->
-      <view class="category-section" v-for="(group, groupIndex) in groupedCategories" :key="groupIndex">
-        <view class="group-header">
-          <text class="group-title">{{getTagTypeLabel(group.tagType)}}</text>
-        </view>
-        <view class="category-grid">
-          <view class="category-item" 
-                v-for="item in group.items" 
-                :key="item.id"
-                @tap="editTag(item)"
-                @touchstart="touchStart(item)"
-                @touchend="touchEnd(item)"
-                @touchmove="touchMove">
-            <view class="icon" :class="[`tag-type-${item.inoutType}`, `tag-style-${item.tagType}`]">
-              <text class="icon-text">{{item.name.substring(0, 1)}}</text>
-            </view>
-            <text class="name">{{item.name}}</text>
+      <!-- 抽屉内容 -->
+      <view class="drawer-content" :class="{ 'drawer-open': isDrawerOpen }">
+        <view class="drawer-inner">
+          <view class="drawer-header">
+            <text class="subtitle">点按以编辑或删除标签</text>
           </view>
-        </view>
-      </view>
+          
+          <!-- 分类类型切换 -->
+          <view class="type-tabs">
+            <view 
+              v-for="type in ['支出', '收入', '不计入收支']" 
+              :key="type"
+              :class="['tab-item', activeType === getTypeValue(type) ? 'active' : '']"
+              @click="activeType = getTypeValue(type)"
+            >
+              <text>{{type}}</text>
+            </view>
+          </view>
 
-      <!-- 添加按钮 -->
-      <view class="add-button-section">
-        <view class="category-item add-item" @click="addTag">
-          <view class="add-button-wrapper">
-            <view class="icon add-icon">
-              <text class="icon-text">+</text>
+          <!-- 分类列表 -->
+          <scroll-view scroll-y class="drawer-scroll">
+            <view class="category-section" v-for="(group, groupIndex) in groupedCategories" :key="groupIndex">
+              <view class="group-header">
+                <text class="group-title">{{getTagTypeLabel(group.tagType)}}</text>
+              </view>
+              <view class="category-grid">
+                <view class="category-item" 
+                      v-for="item in group.items" 
+                      :key="item.id"
+                      @tap="editTag(item)"
+                      @touchstart="touchStart(item)"
+                      @touchend="touchEnd(item)"
+                      @touchmove="touchMove">
+                  <view class="icon" :class="[`tag-type-${item.inoutType}`, `tag-style-${item.tagType}`]">
+                    <text class="icon-text">{{item.name.substring(0, 1)}}</text>
+                  </view>
+                  <text class="name">{{item.name}}</text>
+                </view>
+              </view>
             </view>
-            <text class="name">添加</text>
-          </view>
+
+            <!-- 添加按钮 -->
+            <view class="add-button-section">
+              <view class="category-item add-item" @click="addTag">
+                <view class="add-button-wrapper">
+                  <view class="icon add-icon">
+                    <text class="icon-text">+</text>
+                  </view>
+                  <text class="name">添加</text>
+                </view>
+              </view>
+            </view>
+          </scroll-view>
         </view>
       </view>
     </view>
@@ -59,7 +74,7 @@
         <view class="modal-header">
           <text class="title">{{currentTag ? '编辑标签' : '新增标签'}}</text>
           <view class="close-btn" @click="closeModal">
-            <icon type="icon-guanbi" size="32" color="#999"></icon>
+            <text class="close-icon">×</text>
           </view>
         </view>
         
@@ -123,6 +138,17 @@
 import { ref, computed, nextTick, onMounted } from 'vue'
 import Icon from '@/components/icon/icon.vue'
 import { API } from '@/config'
+
+// 抽屉状态
+const isDrawerOpen = ref(false)
+
+// 切换抽屉状态
+const toggleDrawer = () => {
+  isDrawerOpen.value = !isDrawerOpen.value
+  if (isDrawerOpen.value) {
+    fetchTags() // 打开抽屉时获取数据
+  }
+}
 
 // 当前选择的分类类型
 const activeType = ref('expense')
@@ -570,6 +596,8 @@ const resetForm = () => {
 // 页面加载时获取标签列表
 onMounted(() => {
   fetchTags()
+  // 确保抽屉默认是关闭状态
+  isDrawerOpen.value = false
 })
 
 // 根据标签类型分组的分类列表
@@ -609,31 +637,74 @@ const getTagTypeLabel = (tagType) => {
 
 <style lang="scss">
 .container {
-  padding: 30rpx;
-  background-color: #f5f5f5;
   min-height: 100vh;
+  background-color: #f5f5f5;
 }
 
-.section {
+.settings-list {
+  margin-top: 20rpx;
   background-color: #fff;
-  border-radius: 24rpx;
-  padding: 30rpx;
-  margin-bottom: 30rpx;
   
-  .section-header {
-    margin-bottom: 30rpx;
+  .settings-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 30rpx;
+    border-bottom: 1rpx solid #eee;
     
-    .title {
-      font-size: 32rpx;
-      font-weight: 500;
-      color: #333;
+    .item-left {
+      display: flex;
+      align-items: center;
+      
+      .icon {
+        margin-right: 20rpx;
+        font-size: 36rpx;
+      }
+      
+      .title {
+        font-size: 28rpx;
+        color: #333;
+      }
     }
+    
+    .arrow {
+      color: #999;
+      font-size: 24rpx;
+      transition: transform 0.3s ease;
+      
+      &.arrow-down {
+        transform: rotate(90deg);
+      }
+    }
+  }
+}
+
+.drawer-content {
+  height: 0;
+  overflow: hidden;
+  transition: all 0.3s ease;
+  background-color: #fff;
+  
+  &.drawer-open {
+    height: auto;
+    padding: 20rpx 0;
+  }
+  
+  .drawer-inner {
+    padding: 20rpx 30rpx;
+  }
+  
+  .drawer-header {
+    margin-bottom: 20rpx;
     
     .subtitle {
       font-size: 24rpx;
       color: #999;
-      margin-left: 16rpx;
     }
+  }
+  
+  .drawer-scroll {
+    max-height: calc(100vh - 400rpx);
   }
 }
 
@@ -774,6 +845,7 @@ const getTagTypeLabel = (tagType) => {
   display: flex;
   justify-content: center;
   padding: 20rpx;
+  margin-top: 20rpx;
   
   .category-item {
     width: auto;
@@ -782,7 +854,7 @@ const getTagTypeLabel = (tagType) => {
       display: flex;
       flex-direction: column;
       align-items: center;
-      padding: 10rpx 30rpx;
+      padding: 20rpx 40rpx;
       border-radius: 16rpx;
       background-color: #f9f9f9;
       box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.05);
@@ -794,19 +866,19 @@ const getTagTypeLabel = (tagType) => {
       }
       
       .add-icon {
-        width: 60rpx;
-        height: 60rpx;
+        width: 80rpx;
+        height: 80rpx;
         background: linear-gradient(135deg, #4CAF50, #8BC34A);
         border-radius: 50%;
         display: flex;
         align-items: center;
         justify-content: center;
-        margin-bottom: 10rpx;
+        margin-bottom: 16rpx;
         box-shadow: 0 2rpx 8rpx rgba(76, 175, 80, 0.3);
         
         .icon-text {
           color: #fff;
-          font-size: 36rpx;
+          font-size: 40rpx;
           font-weight: bold;
           line-height: 1;
         }
