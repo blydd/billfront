@@ -2142,7 +2142,7 @@ const getCurrentTagList = computed(() => {
         
         .income {
           color: #67c23a;
-        }
+                  }
       }
     }
     
@@ -2617,6 +2617,8 @@ const getCurrentTagList = computed(() => {
   }
   
   .right {
+
+    padding-right: 20rpx;
     .amount {
       font-size: 32rpx;
       font-weight: 500;
