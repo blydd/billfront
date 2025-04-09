@@ -2088,7 +2088,7 @@ const getCurrentTagList = computed(() => {
 }
 
 .bill-list {
-  margin-top: calc(88rpx + var(--status-bar-height) + 440rpx);
+  margin-top: calc(88rpx + var(--status-bar-height) + 540rpx);
   height: calc(100vh - 88rpx - var(--status-bar-height) - 440rpx - 100rpx);
   padding: 20rpx;
   background-color: #f5f5f5;
