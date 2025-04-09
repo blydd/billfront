@@ -776,7 +776,15 @@ const billGroups = computed(() => {
   
   console.log('分组结果:', groups)
   
-  return groups
+  // 将groups对象转换为数组并按日期降序排序
+  const sortedGroups = Object.entries(groups)
+    .sort(([dateA], [dateB]) => dateB.localeCompare(dateA))
+    .reduce((acc, [date, group]) => {
+      acc[date] = group
+      return acc
+    }, {})
+  
+  return sortedGroups
 })
 
 // 格式化分组日期显示
