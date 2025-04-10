@@ -118,6 +118,26 @@
               </view>
             </view>
           </view>
+
+          <!-- 信用账户特有字段 -->
+          <view class="form-item" v-if="tagForm.tagType === 1 && tagForm.accountType === 2">
+            <text class="label">信用额度</text>
+            <input type="number" v-model="tagForm.creditLimit" placeholder="请输入信用额度" />
+          </view>
+
+          <view class="form-item" v-if="tagForm.tagType === 1 && tagForm.accountType === 2">
+            <text class="label">账单日</text>
+            <picker mode="selector" :range="Array.from({length: 31}, (_, i) => i + 1)" @change="(e) => tagForm.creditBillDay = e.detail.value + 1">
+              <view class="picker-value">{{tagForm.creditBillDay || '请选择账单日'}}</view>
+            </picker>
+          </view>
+
+          <view class="form-item" v-if="tagForm.tagType === 1 && tagForm.accountType === 2">
+            <text class="label">还款日</text>
+            <picker mode="selector" :range="Array.from({length: 31}, (_, i) => i + 1)" @change="(e) => tagForm.creditPayDay = e.detail.value + 1">
+              <view class="picker-value">{{tagForm.creditPayDay || '请选择还款日'}}</view>
+            </picker>
+          </view>
         </view>
         
         <view class="modal-footer">
@@ -165,6 +185,9 @@ const tagForm = ref({
   inoutType: 1, // 1: 支出, 2: 收入, 3: 不计入收支
   tagType: 2, // 1: 账户类型, 2: 账单类型
   accountType: null,
+  creditLimit: null, // 信用账户额度
+  creditBillDay: null, // 账单日
+  creditPayDay: null, // 还款日
 })
 
 // 标签类型选项
@@ -513,6 +536,31 @@ const saveTag = async () => {
     })
     return
   }
+
+  // 信用账户特有字段验证
+  if (tagForm.value.tagType === 1 && tagForm.value.accountType === 2) {
+    if (!tagForm.value.creditLimit) {
+      uni.showToast({
+        title: '请输入信用额度',
+        icon: 'none'
+      })
+      return
+    }
+    if (!tagForm.value.creditBillDay) {
+      uni.showToast({
+        title: '请选择账单日',
+        icon: 'none'
+      })
+      return
+    }
+    if (!tagForm.value.creditPayDay) {
+      uni.showToast({
+        title: '请选择还款日',
+        icon: 'none'
+      })
+      return
+    }
+  }
   
   try {
     // 检查token和userId
@@ -542,6 +590,9 @@ const saveTag = async () => {
           inoutType: tagForm.value.inoutType,
           tagType: tagForm.value.tagType,
           accountType: tagForm.value.accountType,
+          creditLimit: tagForm.value.creditLimit,
+          creditBillDay: tagForm.value.creditBillDay,
+          creditPayDay: tagForm.value.creditPayDay,
         },
         success: (res) => {
           resolve(res)
@@ -590,6 +641,9 @@ const resetForm = () => {
               activeType.value === 'income' ? 2 : 3,
     tagType: 2,
     accountType: null,
+    creditLimit: null,
+    creditBillDay: null,
+    creditPayDay: null,
   }
 }
 
@@ -918,10 +972,14 @@ const getTagTypeLabel = (tagType) => {
   position: relative;
   z-index: 1000;
   width: 600rpx;
+  max-height: 80vh;
+  margin: 40rpx 0;
   background-color: #fff;
   border-radius: 24rpx;
   overflow: hidden;
   animation: modalFadeIn 0.3s ease;
+  display: flex;
+  flex-direction: column;
   
   .modal-header {
     padding: 30rpx;
@@ -929,6 +987,7 @@ const getTagTypeLabel = (tagType) => {
     justify-content: space-between;
     align-items: center;
     border-bottom: 1px solid #eee;
+    flex-shrink: 0;
     
     .title {
       font-size: 32rpx;
@@ -943,79 +1002,113 @@ const getTagTypeLabel = (tagType) => {
     .form-item {
       margin-bottom: 30rpx;
       
-      &:last-child {
-        margin-bottom: 0;
-      }
-      
       .label {
+        display: block;
         font-size: 28rpx;
         color: #333;
-        margin-bottom: 16rpx;
-        display: block;
+        margin-bottom: 12rpx;
       }
       
       input {
         width: 100%;
         height: 80rpx;
-        background-color: #f5f5f5;
-        border-radius: 12rpx;
-        padding: 0 24rpx;
         font-size: 28rpx;
-        color: #333;
+        border: 2rpx solid #ddd;
+        border-radius: 8rpx;
+        padding: 0 20rpx;
+        box-sizing: border-box;
+        background-color: #fff;
+        transition: all 0.3s ease;
+        
+        &:focus {
+          border-color: #4CAF50;
+          outline: none;
+        }
+      }
+      
+      .type-display {
+        font-size: 28rpx;
+        color: #666;
+        height: 80rpx;
+        line-height: 80rpx;
+        padding: 0 20rpx;
+        border: 2rpx solid #ddd;
+        border-radius: 8rpx;
+        background-color: #f8f8f8;
       }
       
       .picker-value {
-        width: 100%;
-        height: 80rpx;
-        background-color: #f5f5f5;
-        border-radius: 12rpx;
-        padding: 0 24rpx;
         font-size: 28rpx;
-        color: #333;
-        display: flex;
-        align-items: center;
+        color: #666;
+        height: 80rpx;
+        line-height: 80rpx;
+        padding: 0 20rpx;
+        border: 2rpx solid #ddd;
+        border-radius: 8rpx;
+        background-color: #fff;
+        
+        &:active {
+          background-color: #f8f8f8;
+        }
+      }
+    }
+    flex: 1;
+    overflow-y: auto;
+    
+    .form-item {
+      margin-bottom: 30rpx;
+      
+      &:last-child {
+        margin-bottom: 0;
       }
     }
   }
   
   .modal-footer {
-    padding: 20rpx 30rpx;
+    padding: 30rpx;
     display: flex;
     justify-content: space-between;
     align-items: center;
     border-top: 1px solid #eee;
+    flex-shrink: 0;
     
-    .footer-left {
-      .delete-btn {
-        width: 160rpx;
-        height: 72rpx;
-        border-radius: 36rpx;
-        font-size: 28rpx;
-        background-color: #f5f5f5;
-        color: #EE6666;
-      }
+    .footer-left, .footer-right {
+      display: flex;
+      gap: 20rpx;
+      flex: 1;
     }
     
     .footer-right {
-      display: flex;
+      justify-content: flex-end;
       
       button {
-        width: 160rpx;
-        height: 72rpx;
-        border-radius: 36rpx;
-        font-size: 28rpx;
-        margin-left: 20rpx;
-        
-        &.cancel-btn {
-          background-color: #f5f5f5;
-          color: #666;
-        }
-        
-        &.confirm-btn {
-          background-color: #4CAF50;
-          color: #fff;
-        }
+        flex: 1;
+        max-width: 180rpx;
       }
+    }
+    
+    button {
+      font-size: 28rpx;
+      padding: 12rpx 30rpx;
+      border-radius: 8rpx;
+      flex: 1;
+      max-width: 180rpx;
+    }
+    
+    .delete-btn {
+      background-color: #fff;
+      color: #EE6666;
+      border: 1px solid #EE6666;
+    }
+    
+    .cancel-btn {
+      background-color: #f5f5f5;
+      color: #666;
+    }
+    
+    .confirm-btn {
+      background-color: #4CAF50;
+      color: #fff;
     }
   }
 }
@@ -1136,4 +1229,30 @@ const getTagTypeLabel = (tagType) => {
     }
   }
 }
-</style> 
+
+.input-field {
+  width: 100%;
+  height: 64rpx;
+  padding: 0 20rpx;
+  border: 1px solid #eee;
+  border-radius: 8rpx;
+  font-size: 28rpx;
+  color: #333;
+}
+
+.picker-view {
+  width: 100%;
+  height: 64rpx;
+  line-height: 64rpx;
+  padding: 0 20rpx;
+  border: 1px solid #eee;
+  border-radius: 8rpx;
+  font-size: 28rpx;
+  color: #333;
+  background-color: #fff;
+}
+
+.picker-view:active {
+  background-color: #f5f5f5;
+}
+</style>
