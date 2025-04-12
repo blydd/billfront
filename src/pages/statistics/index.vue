@@ -140,20 +140,12 @@ function formatDefaultDate() {
 // 查询账单数据
 const queryBills = async () => {
   try {
-    // 检查token和userId
+    // 检查token
     const token = uni.getStorageSync('token')
-    const userId = uni.getStorageSync('userId')
-    if (!token || !userId) {
-      uni.showToast({
-        title: '请先登录',
-        icon: 'none',
-        duration: 2000
-      })
-      return
-    }
+
+
 
     const params = {
-      userId: userId,
       month: currentDate.value,
       accountType: selectedAccountType.value === '储蓄账户' ? 1 :
                   selectedAccountType.value === '信用账户' ? 2 : undefined,

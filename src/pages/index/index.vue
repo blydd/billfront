@@ -1,16 +1,9 @@
 <template>
   <view class="container">
-    <!-- 授权按钮 -->
-    <view v-if="!isAuthorized" class="auth-container">
-      <view class="auth-content">
-        <text class="auth-title">欢迎使用标签记账</text>
-        <text class="auth-desc">需要获取您的用户信息</text>
-        <button class="auth-button" @click="handleAuth">点击授权登录</button>
-      </view>
-    </view>
+
     
     <!-- 主页内容，只在已授权时显示 -->
-    <template v-else>
+    <template>
       <!-- 自定义导航栏 -->
       <view class="custom-nav">
         <text class="nav-title">账单明细</text>
@@ -635,7 +628,6 @@ const getFirstChar = (item) => {
 const queryBills = async () => {
   try {
     const params = {
-      userId: 1,
       month: currentDate.value,
       accountType: selectedAccountType.value === '储蓄账户' ? 1 :
                   selectedAccountType.value === '信用账户' ? 2 : undefined,
@@ -854,7 +846,12 @@ const handleDateChange = (e) => {
 const init = async () => {
   // 检查是否已授权
   const token = uni.getStorageSync('token')
-  isAuthorized.value = !!token
+  //如果token不存在，则赋值”user.test.token"
+  if (!token) {
+    uni.setStorageSync('token', 'user.test.token') 
+  }
+  const token2 = uni.getStorageSync('token')
+  isAuthorized.value = !!token2
   
   if (isAuthorized.value) {
     // 先查询标签列表

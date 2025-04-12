@@ -232,10 +232,9 @@ const getTypeValue = (type) => {
 // 获取标签列表
 const fetchTags = async () => {
   try {
-    // 检查token和userId
+    // 检查token
     const token = uni.getStorageSync('token')
-    const userId = uni.getStorageSync('userId')
-    if (!token || !userId) {
+    if (!token) {
       uni.showToast({
         title: '请先登录',
         icon: 'none',
@@ -252,9 +251,6 @@ const fetchTags = async () => {
       uni.request({
         url: API.TAGS.LIST,
         method: 'GET',
-        data: {
-          userId: userId
-        },
         success: (res) => {
           resolve(res)
         },
@@ -308,10 +304,9 @@ const addTag = async () => {
 // 编辑标签
 const editTag = async (tag) => {
   try {
-    // 检查token和userId
+    // 检查token
     const token = uni.getStorageSync('token')
-    const userId = uni.getStorageSync('userId')
-    if (!token || !userId) {
+    if (!token) {
       uni.showToast({
         title: '请先登录',
         icon: 'none',
@@ -326,11 +321,8 @@ const editTag = async (tag) => {
     
     const response = await new Promise((resolve, reject) => {
       uni.request({
-        url: API.TAGS.UPDATE(tag.id),
+        url: API.TAGS.QUERY(tag.id),
         method: 'GET',
-        data: {
-          userId: userId
-        },
         success: (res) => {
           resolve(res)
         },
@@ -434,10 +426,9 @@ const showDeleteConfirm = (tag) => {
 // 删除标签
 const deleteTag = async (tag) => {
   try {
-    // 检查token和userId
+    // 检查token
     const token = uni.getStorageSync('token')
-    const userId = uni.getStorageSync('userId')
-    if (!token || !userId) {
+    if (!token) {
       uni.showToast({
         title: '请先登录',
         icon: 'none',
@@ -454,9 +445,6 @@ const deleteTag = async (tag) => {
       uni.request({
         url: API.TAGS.DELETE(tag.id),
         method: 'DELETE',
-        data: {
-          userId: userId
-        },
         success: (res) => {
           resolve(res)
         },
@@ -563,10 +551,9 @@ const saveTag = async () => {
   }
   
   try {
-    // 检查token和userId
+    // 检查token
     const token = uni.getStorageSync('token')
-    const userId = uni.getStorageSync('userId')
-    if (!token || !userId) {
+    if (!token) {
       uni.showToast({
         title: '请先登录',
         icon: 'none',
@@ -585,7 +572,6 @@ const saveTag = async () => {
         url,
         method,
         data: {
-          userId: userId,
           name: tagForm.value.name,
           inoutType: tagForm.value.inoutType,
           tagType: tagForm.value.tagType,

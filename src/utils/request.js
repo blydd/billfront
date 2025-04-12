@@ -3,8 +3,7 @@ const request = (options) => {
   // 登录相关的接口不需要添加token
   const isAuthApi = options.url.includes('/api/user/login');
   
-  // 获取用户ID和token
-  const userId = uni.getStorageSync('userId')
+  // 获取token
   const token = uni.getStorageSync('token')
   
   // 添加请求头
@@ -12,9 +11,6 @@ const request = (options) => {
   
   // 非登录接口才添加认证信息
   if (!isAuthApi) {
-    if (userId) {
-      header['X-User-ID'] = userId
-    }
     if (token) {
       header['Authorization'] = `Bearer ${token}`
     }
@@ -48,7 +44,6 @@ const request = (options) => {
           
           // 清除本地存储的用户信息
           uni.removeStorageSync('userInfo')
-          uni.removeStorageSync('userId')
           uni.removeStorageSync('token')
           
           // 触发授权状态更新

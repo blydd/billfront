@@ -8,6 +8,12 @@
 			}
 		},
 		{
+			"path": "pages/login/index",
+			"style": {
+				"navigationBarTitleText": "登录"
+			}
+		},
+		{
 			"path": "pages/statistics/index",
 			"style": {
 				"navigationBarTitleText": "统计分析"
