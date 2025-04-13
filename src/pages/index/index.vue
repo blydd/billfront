@@ -1880,19 +1880,27 @@ const getCurrentTagList = computed(() => {
     
     .tag-type-list {
       display: flex;
-      flex-wrap: wrap;
-      gap: 56rpx;
-      padding: 0 0 0 0;
+      justify-content: space-between;
+      padding: 0;
       
       .tag-type-item {
-        padding: 5rpx 40rpx 10rpx 40rpx;
-        background-color: #f5f5f5;
-        border-radius: 30rpx;;
+        flex: 1;
+        margin: 0 5rpx;
+        text-align: center;
+        padding: 5rpx 0 10rpx 0;
         background-color: #f5f5f5;
         border-radius: 30rpx;
         font-size: 24rpx;
         color: #666;
         transition: all 0.3s ease;
+        
+        &:first-child {
+          margin-left: 0;
+        }
+        
+        &:last-child {
+          margin-right: 0;
+        }
         
         &.active {
           background-color: rgb(152, 226, 147);
